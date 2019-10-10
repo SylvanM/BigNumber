@@ -1,3 +1,3 @@
 # BigNumber
 
-A description of this package.
+Implementation of a BigNumber library using C and Swift
