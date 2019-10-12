@@ -519,7 +519,7 @@ public extension BigNumber {
         
         assert(rhs != 0, "Cannot divide by 0")
         
-        var (a, b, product) : (BN, BN, BN) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros, 0)
+        var (a, b) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros)
         
         // make them have the same size
         let size = max(a.size, b.size)
@@ -532,26 +532,23 @@ public extension BigNumber {
             b.array.append(0)
         }
         
-        // find msb significant bit and divide by that amount
+        // now do the division
         
-        var i = 0
+        var (quotient, remainder) : (BN, BN) = (0, 0)
         
-        while a != 0 {
-            a = a >> 1
-            i += 1
+        for i in (0..<b.sizeInBits).reversed() {
+            quotient = quotient << 1
+            remainder = remainder << 1
+            
+            remainder |= (a & (BN(1) << i)) >> i
+            
+            if (remainder >= b) {
+                remainder = remainder - b;
+                quotient |= 1;
+            }
         }
         
-        // i is now the msb, so divide a by that amount
-        a = a >> i
-        
-        // now subtract while there are remaining 1's in the binary number
-        i -= 1
-        while i > 0 {
-            a = a - (1 << i)
-            i -= 1
-        }
-        
-        return a.erasingLeadingZeros
+        return quotient
     }
     
 }

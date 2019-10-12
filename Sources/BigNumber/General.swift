@@ -18,7 +18,7 @@ func toNibble(_ char: Character) -> UInt8 {
 
 func toChar(_ nibble: UInt64) -> Character {
     var c: Character
-    let n = 0x0f&nibble
+    let n = 0x0f & nibble
     
     if 0 <= n && n < 10 {
         c = String(n)[0]

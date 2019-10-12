@@ -169,6 +169,14 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         self.array = array
     }
     
+    /// Creates a BN with a given ```Int``` value
+    ///
+    /// - Parameters:
+    ///     - integer: ```Int``` to be converted to a ```BN```
+    init(_ integer: Int) {
+        self.array = [UInt64(integer)]
+    }
+    
     // MARK: - Subscripts
     
     /// References the array value at the given index
