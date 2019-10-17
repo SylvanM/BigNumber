@@ -551,4 +551,88 @@ public extension BigNumber {
         return quotient
     }
     
+    /// Modulo operation for two ```BN```'s
+    ///
+    /// - Parameters:
+    ///     - lhs: ```BN``` to modulo by another ```BN```
+    ///     - rhs: ```BN``` by which to modulo
+    ///
+    /// - Returns: ```lhs``` modulo ```rhs```
+    static func % (lhs: BN, rhs: BN) -> BN {
+        assert(rhs != 0, "Cannot divide by 0")
+        
+        var (a, b) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros)
+        
+        // make them have the same size
+        let size = max(a.size, b.size)
+        
+        while a.size < size {
+            a.array.append(0)
+        }
+        
+        while b.size < size {
+            b.array.append(0)
+        }
+        
+        // now do the division
+        
+        var remainder: BN = 0
+        
+        for i in (0..<b.sizeInBits).reversed() {
+            remainder = remainder << 1
+            
+            remainder |= (a & (BN(1) << i)) >> i
+            
+            if (remainder >= b) {
+                remainder = remainder - b;
+            }
+        }
+        
+        return remainder
+    }
+    
+    // MARK: Compound Assignment Arithmetic Operators
+    
+    /// Adds two BNs and assigns the sum to the left operand
+    ///
+    /// This will add elements to the array if needed
+    ///
+    /// - Parameters:
+    ///     - a: BN to add and also the variable to store the result
+    ///     - rhs: BN to add to ```a```
+    ///
+    /// - Returns: Sum of ```a``` and ```rhs```
+    static func += (a: inout BN, rhs: BN) -> BN {
+        
+        var r = BN(0).keepingLeadingZeros
+        a.setShouldEraseLeadingZeros(to: false)
+        let b = rhs.keepingLeadingZeros
+        
+        var carryOut: UInt64 = 0
+        var carryIn:  UInt64 = 0
+        
+        let largerSize: Int = {
+            let x = a.size
+            let y = b.size
+            return x >= y ? x : y
+        }()
+        
+        for i in 0...largerSize {
+            r[zeroing: i] = a[zeroing: i] &+ b[zeroing: i]
+            if r[i] < a[zeroing: i] {
+                carryOut = 1
+            }
+            if carryIn != 0 {
+                r[i] &+= 1
+                if ( 0 == r[i]) {
+                    carryOut = 1
+                }
+            }
+            carryIn = carryOut
+            carryOut = 0
+        }
+        
+        return r.erasingLeadingZeros
+    }
+    
 }

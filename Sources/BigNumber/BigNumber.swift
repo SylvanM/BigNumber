@@ -16,7 +16,6 @@ public typealias BN = BigNumber
 /// An integer that has dynamically allocated memory
 public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, Comparable/*, BinaryInteger, UnsignedInteger*/ {
     
-    
     // MARK: - Typealiases
     
     /// The element type in the ```BN``` array
@@ -24,29 +23,6 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     
     /// The integer literal type
     public typealias IntegerLiteralType = Int
-    
-    /// Whether or not the BN should automatically optimize storage
-    ///
-    /// When set to ```true```, the BN will always get rid of leading zeros
-    ///
-    /// In order to prevent errors where someone may forget to enable this after disabling it, you cannot directly set this value. Instead, you can only
-    /// get a copy of the BN with this value set to ```true``` or ```false```.
-    ///
-    /// It is very much **not** reccommended to do
-    /// ```swift
-    /// let a: BN = 0
-    /// a = a.keepingLeadingZeros
-    /// ```
-    /// Instead, just store it to another variable
-    private var shouldEraseLeadingZeros = true {
-        didSet {
-            if shouldEraseLeadingZeros {
-                while array.last == 0 && array.count > 1 {
-                    array.removeLast()
-                }
-            }
-        }
-    }
     
     public var erasingLeadingZeros: BigNumber {
         var a = self
@@ -61,6 +37,8 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     }
     
     // MARK: - Properties
+    
+    
     
     /// The array representation of the ```BN```, in Little-Endian format
     public var array: [UInt64] {
@@ -88,6 +66,29 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// Size of the integer represented by the ```BN``` in bits
     public var sizeInBits: Int {
         return sizeInBytes * 8
+    }
+    
+    /// Whether or not the BN should automatically optimize storage
+    ///
+    /// When set to ```true```, the BN will always get rid of leading zeros
+    ///
+    /// In order to prevent errors where someone may forget to enable this after disabling it, you cannot directly set this value. Instead, you can only
+    /// get a copy of the BN with this value set to ```true``` or ```false```.
+    ///
+    /// It is very much **not** reccommended to do
+    /// ```swift
+    /// let a: BN = 0
+    /// a = a.keepingLeadingZeros
+    /// ```
+    /// Instead, just store it to another variable
+    private var shouldEraseLeadingZeros = true {
+        didSet {
+            if shouldEraseLeadingZeros {
+                while array.last == 0 && array.count > 1 {
+                    array.removeLast()
+                }
+            }
+        }
     }
     
     /// Hex string representation of the ```BN```
@@ -187,6 +188,34 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         set {
             array[index] = newValue
         }
+    }
+    
+    // MARK: - Methods
+    
+    /// Changes Whether or not the BN should automatically optimize storage
+    ///
+    /// When ```value``` is set to ```true```, the BN will always get rid of leading zeros
+    ///
+    /// In order to prevent errors where someone may forget to enable this after disabling it, you cannot directly set the ```shouldEraseLeadingZeros``` value. Instead, you can only
+    /// get a copy of the BN with this value set to ```true``` or ```false```, or call this function.
+    ///
+    /// It is very much **not** reccommended to do
+    /// ```swift
+    /// let a: BN = 0
+    /// a = a.keepingLeadingZeros
+    /// ```
+    /// or
+    /// ```swift
+    /// let a: BN = 0
+    /// a.setShouldEraseLeadingZeros(to: false)
+    /// ```
+    /// Instead, just store it to another variable:
+    /// ```swift
+    /// let a: BN = 0
+    /// let b = a.keepingLeadingZeros
+    /// ```
+    internal mutating func setShouldEraseLeadingZeros(to value: Bool) {
+        shouldEraseLeadingZeros = value
     }
     
     /// Returns the indexed item of the array, or nil if it does not exist
