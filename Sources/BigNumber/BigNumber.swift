@@ -14,7 +14,20 @@ public typealias BN = BigNumber
 /// A BigNumber object
 ///
 /// An integer that has dynamically allocated memory
-public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, Comparable/*, BinaryInteger, UnsignedInteger*/ {
+public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, Comparable, UnsignedInteger, Hashable {
+    
+    public var words: UInt64.Words {
+        return UInt64.Words(array[0])
+    }
+    
+    
+    
+    
+    
+    
+    
+    public typealias Words = UInt64.Words
+    
     
     // MARK: - Typealiases
     
@@ -55,17 +68,28 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     
     /// Size of the array
     public var size: Int {
-        return array.count
+        array.count
     }
     
     /// The size of the integer represented by the ```BN```, in bytes
     public var sizeInBytes: Int {
-        return size * MemoryLayout<UInt64>.size
+        size * MemoryLayout<UInt64>.size
     }
     
     /// Size of the integer represented by the ```BN``` in bits
-    public var sizeInBits: Int {
-        return sizeInBytes * 8
+    public var bitWidth: Int {
+        sizeInBytes * 8
+    }
+    
+    public var trailingZeroBitCount: Int {
+        var zeros = 0
+        for i in 0..<array.count {
+            zeros += array[i].trailingZeroBitCount
+            if array[i].trailingZeroBitCount != 64 {
+                break
+            }
+        }
+        return zeros
     }
     
     /// Whether or not the BN should automatically optimize storage
@@ -107,15 +131,54 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
             string.remove(at: string.startIndex)
         }
         
-        return "0x" + string
+        return string
+    }
+    
+    /// Hex string representation of the ```BN```, with every 4 digits separated by a space
+    public var formattedHexString: String {
+        var string = hexString
+        for i in (0..<hexString.count).reversed() {
+            if (string.count - i) % 4 == 0 {
+                string.insert(" ", at: .init(utf16Offset: i, in: string))
+            }
+        }
+        return string
     }
     
     /// Hex string description of the BN used when being printed
     public var description: String {
-        return hexString
+        "0x" + hexString
     }
     
     // MARK: - Initializers
+    
+    public init?<T>(exactly source: T) where T : BinaryFloatingPoint {
+        self.array = [UInt64(source)]
+    }
+    
+    public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
+        self.array = [UInt64(source)]
+    }
+    
+    public init<T>(_ source: T) where T : BinaryFloatingPoint {
+        self.array = [UInt64(source)]
+    }
+    
+    public init<T>(clamping source: T) where T : BinaryInteger {
+        self.array = [UInt64(source)]
+    }
+    
+    public init<T>(truncatingBits source: T) where T : BinaryInteger {
+        self.array = [UInt64(source)]
+    }
+    
+    public init?<T>(exactly source: T) where T : BinaryInteger {
+        self.array = [UInt64(source)]
+    }
+    
+    public init<T>(_ source: T) where T : BinaryInteger {
+        self.array = [UInt64(source)]
+    }
     
     /// Creates a BN from an integer literal
     ///
@@ -133,6 +196,8 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     public init(arrayLiteral elements: UInt64...) {
         array = elements
     }
+    
+    
     
     /// Creates a ```BN``` from a hexadecimal string
     ///
@@ -166,8 +231,8 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     ///
     /// - Parameters:
     ///     - array: The array object
-    init(_ array: [UInt64]) {
-        self.array = array
+    init <T: BinaryInteger>(_ array: [T]) {
+        self.array = array.map { UInt64($0) }
     }
     
     /// Creates a BN with a given ```Int``` value
@@ -176,18 +241,6 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     ///     - integer: ```Int``` to be converted to a ```BN```
     init(_ integer: Int) {
         self.array = [UInt64(integer)]
-    }
-    
-    // MARK: - Subscripts
-    
-    /// References the array value at the given index
-    subscript (index: Int) -> UInt64 {
-        get {
-            return array[index]
-        }
-        set {
-            array[index] = newValue
-        }
     }
     
     // MARK: - Methods
@@ -214,21 +267,43 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// let a: BN = 0
     /// let b = a.keepingLeadingZeros
     /// ```
+    #warning("Erase this bottom line")
+    @available(*, deprecated, message: "Just letting you know where this is being used")
     internal mutating func setShouldEraseLeadingZeros(to value: Bool) {
         shouldEraseLeadingZeros = value
     }
     
+    public func hash(into hasher: inout Hasher) {
+        for element in array {
+            hasher.combine(element)
+        }
+    }
+    
+    // MARK: - Subscripts
+    
+    /// References the array value at the given index
+    subscript (index: Int) -> UInt64 {
+        get {
+            array[index]
+        }
+        set {
+            array[index] = newValue
+        }
+    }
+    
+    
+    
     /// Returns the indexed item of the array, or nil if it does not exist
     subscript (safe index: Int) -> UInt64? {
         get {
-            return (size >= index) ? self[index] : nil
+            (size >= index) ? self[index] : nil
         }
     }
     
     /// Returns the indexed item of the array, or 0 if it does not exist
     subscript (zeroing index: Int) -> UInt64 {
         get {
-            return (size > index) ? self[index] : 0
+            (size > index) ? self[index] : 0
         }
         set {
             if size <= index {

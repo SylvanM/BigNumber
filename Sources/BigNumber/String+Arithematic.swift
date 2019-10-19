@@ -30,7 +30,7 @@ public extension String {
     ///     - right: Character
     ///
     /// - Returns: The string with the appended character
-    @discardableResult static func +=(left: inout String, right: Character) -> String {
+    @discardableResult static func += (left: inout String, right: Character) -> String {
         left = left + right
         return left
     }
