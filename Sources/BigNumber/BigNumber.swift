@@ -54,7 +54,7 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     
     
     /// The array representation of the ```BN```, in Little-Endian format
-    public var array: [UInt64] {
+    public var array: [UInt64] = [] {
         // this automatically makes sure we are never using a larger array than we need
         // if the last UInt64 is 0, it removes it.
         didSet {
@@ -134,6 +134,17 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         return string
     }
     
+    /// Binary string representation of thew ```BN```
+    ///
+    /// Leading zeros are not omitted
+    public var binaryString: String {
+        var string = ""
+        for i in 0..<self.bitWidth {
+            string = String(self[bit: i]) + string
+        }
+        return "0b" + string
+    }
+    
     /// Hex string representation of the ```BN```, with every 4 digits separated by a space
     public var formattedHexString: String {
         var string = hexString
@@ -194,10 +205,12 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// - Parameters:
     ///     - elements: Array of type ```[UInt64]```
     public init(arrayLiteral elements: UInt64...) {
-        array = elements
+        var arr = elements
+        while arr.last == 0 && arr.count > 1 {
+            arr.removeLast()
+        }
+        self.array = arr
     }
-    
-    
     
     /// Creates a ```BN``` from a hexadecimal string
     ///
@@ -267,8 +280,8 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// let a: BN = 0
     /// let b = a.keepingLeadingZeros
     /// ```
-    #warning("Erase this bottom line")
-    @available(*, deprecated, message: "Just letting you know where this is being used")
+    #warning("Erase this bottom line eventually")
+    @available(*, deprecated, message: "Note to myself so that I get a compiler warning wherever I use this function")
     internal mutating func setShouldEraseLeadingZeros(to value: Bool) {
         shouldEraseLeadingZeros = value
     }
@@ -291,12 +304,21 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         }
     }
     
-    
-    
-    /// Returns the indexed item of the array, or nil if it does not exist
-    subscript (safe index: Int) -> UInt64? {
+    /// References a bit with a specified index
+    subscript (bit index: Int) -> UInt64 {
         get {
-            (size >= index) ? self[index] : nil
+            (self >> index & BN(1))[0]
+        }
+        set {
+            self &= ~(1 << index)
+            self |= (newValue << index)
+        }
+    }
+    
+    /// Returns the indexed item of the array, or 0 if it does not exist
+    subscript (safe index: Int) -> UInt64 {
+        get {
+            (size > index) ? self[index] : 0
         }
     }
     

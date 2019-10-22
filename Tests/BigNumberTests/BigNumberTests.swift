@@ -7,9 +7,13 @@ final class BigNumberTests: XCTestCase {
     
     func testExample() {
         
-        for i in 0..<BN(0xFFFFFFFFFFFFF) {
-            print(i)
-        }
+        var bn: BN = [0, 1]
+        print(bn.binaryString)
+        
+        bn >>= 1
+        
+        
+        print(bn.binaryString)
         
     }
     
