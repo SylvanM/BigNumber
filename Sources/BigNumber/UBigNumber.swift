@@ -9,49 +9,41 @@
 import Foundation
 
 /// Convenience typealias
-public typealias BN = BigNumber
+public typealias UBN = UBigNumber
 
 /// A BigNumber object
 ///
-/// An integer that has dynamically allocated memory
-public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, Comparable, UnsignedInteger, Hashable {
+/// An unsigned integer type that has dynamically allocated memory
+public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, UnsignedInteger, Hashable {
     
+    /// I have no idea what this means in this context
     public var words: UInt64.Words {
         return UInt64.Words(array[0])
     }
     
-    
-    
-    
-    
-    
-    
     public typealias Words = UInt64.Words
-    
     
     // MARK: - Typealiases
     
-    /// The element type in the ```BN``` array
+    /// The element type in the ```UBN``` array
     public typealias ArrayLiteralElement = UInt64
     
     /// The integer literal type
     public typealias IntegerLiteralType = Int
     
-    public var erasingLeadingZeros: BigNumber {
+    public var erasingLeadingZeros: UBigNumber {
         var a = self
         a.shouldEraseLeadingZeros = true
         return a
     }
     
-    public var keepingLeadingZeros: BigNumber {
+    public var keepingLeadingZeros: UBigNumber {
         var a = self
         a.shouldEraseLeadingZeros = false
         return a
     }
     
     // MARK: - Properties
-    
-    
     
     /// The array representation of the ```BN```, in Little-Endian format
     public var array: [UInt64] = [] {
@@ -81,6 +73,7 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         sizeInBytes * 8
     }
     
+    /// The amount of trailing zero bits
     public var trailingZeroBitCount: Int {
         var zeros = 0
         for i in 0..<array.count {
@@ -163,44 +156,96 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     
     // MARK: - Initializers
     
+    /// Creates a new ```UBigNumber``` with the exact value of the passed ```BinaryFloatingPoint``` if it is representable. If not, this returns ```nil```
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: The exact value of ```source``` as a ```UBigNumber```, so long as ```source``` has no fractional component. If ```source``` has a fractional
+    /// component, this returns ```nil```
     public init?<T>(exactly source: T) where T : BinaryFloatingPoint {
+        
+        if source < 0 {
+            return nil
+        }
+        
         self.array = [UInt64(source)]
     }
     
-    public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
-        self.array = [UInt64(source)]
-    }
-    
+    /// Creates a new ```UBigNumber``` with the integral component of whatever is passed into the initializer
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: The integral component of ```source``` as a ```UBigNumber```
     public init<T>(_ source: T) where T : BinaryFloatingPoint {
         self.array = [UInt64(source)]
     }
+         
+    /// Creates a new ```UBigNumber```, truncating or extending any bits as needed
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: ```source``` as a ```UBigNumber```
+    public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
+        self.array = [UInt64(truncatingIfNeeded: source)]
+    }
     
+    /// Creates a new ```UBigNumber``` from a ```BinaryInteger```, clamping as needed
+    ///
+    /// This means that if ```source``` is less than 0, the ```UBIgNumber``` will be 0.
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryInteger``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: A ```UBigNumber``` with the value of ```source```, clamped to be within the range ```[0, ∞)```
     public init<T>(clamping source: T) where T : BinaryInteger {
         self.array = [UInt64(source)]
     }
     
+    /// Creates a new ```UBigNumber```, truncating or extending any bits as needed
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryInteger``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: ```source``` as a ```UBigNumber```
     public init<T>(truncatingBits source: T) where T : BinaryInteger {
         self.array = [UInt64(source)]
     }
     
+    /// Creates a new ```UBigNumber``` with the exact value of the passed ```BinaryFloatingPoint``` if it is representable. If not, this returns ```nil```
+    ///
+    /// - Parameters:
+    ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
+    ///
+    /// - Returns: The exact value of ```source``` as a ```UBigNumber```, so long as ```source``` is greater than or equal to 0.
     public init?<T>(exactly source: T) where T : BinaryInteger {
+        if source < 0 {
+            return nil
+        }
         self.array = [UInt64(source)]
     }
-    
+
+    /// Creates a new instance of ```UBigNumber``` from the given integer
+    ///
+    /// May result in a runtime error if ```source``` is not representable as a UBigNumber
+    ///
+    /// - Returns:
     public init<T>(_ source: T) where T : BinaryInteger {
         self.array = [UInt64(source)]
     }
     
-    /// Creates a BN from an integer literal
+    /// Creates a UBN from an integer literal
     ///
     /// - Parameters:
     ///     - value: The value of the integer literal
     public init(integerLiteral value: Int) {
         assert(value >= 0, "Integer literal must be an unsigned integer")
-        self = [UInt64(value)]
+        self.init([UInt64(value)])
     }
     
-    /// Creates a ```BN``` from an array literal
+    /// Creates a ```UBN``` from an array literal
     ///
     /// - Parameters:
     ///     - elements: Array of type ```[UInt64]```
@@ -212,7 +257,7 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         self.array = arr
     }
     
-    /// Creates a ```BN``` from a hexadecimal string
+    /// Creates a ```UBN``` from a hexadecimal string
     ///
     /// - Parameters:
     ///     - hex: A value hexadecimal string
@@ -240,7 +285,7 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         shouldEraseLeadingZeros = true
     }
     
-    /// Creates a BN from an array object
+    /// Creates a UBN from an array object
     ///
     /// - Parameters:
     ///     - array: The array object
@@ -248,10 +293,10 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         self.array = array.map { UInt64($0) }
     }
     
-    /// Creates a BN with a given ```Int``` value
+    /// Creates a UBN with a given ```Int``` value
     ///
     /// - Parameters:
-    ///     - integer: ```Int``` to be converted to a ```BN```
+    ///     - integer: ```Int``` to be converted to a ```UBN```
     init(_ integer: Int) {
         self.array = [UInt64(integer)]
     }
@@ -280,12 +325,13 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// let a: BN = 0
     /// let b = a.keepingLeadingZeros
     /// ```
-    #warning("Erase this bottom line eventually")
+    #warning("Erase this error flag eventually")
     @available(*, deprecated, message: "Note to myself so that I get a compiler warning wherever I use this function")
-    internal mutating func setShouldEraseLeadingZeros(to value: Bool) {
+    mutating internal func setShouldEraseLeadingZeros(to value: Bool) {
         shouldEraseLeadingZeros = value
     }
     
+    /// Hashes the ```UBigNumber```
     public func hash(into hasher: inout Hasher) {
         for element in array {
             hasher.combine(element)
@@ -304,14 +350,34 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         }
     }
     
-    /// References a bit with a specified index
+    /// References a bit with a specified index. No overflow handling will occur
     subscript (bit index: Int) -> UInt64 {
         get {
-            (self >> index & BN(1))[0]
+            // if the referenced bit is not actually in the array, just return 0
+            (size * 64) - 1 > abs(index) ? (self >> index & UBN(1))[0] : 0
         }
         set {
             self &= ~(1 << index)
             self |= (newValue << index)
+        }
+    }
+    
+    /// References a bit with a specified index, with overflow handling.
+    subscript (bitWithOverflowHandling index: Int) -> UInt64 {
+        get {
+            self[bit: index]
+        }
+        set {
+            shouldEraseLeadingZeros = false
+            
+            for _ in 0..<((index / 8) + 1) {
+                self.array.append(0x0)
+            }
+            
+            self &= ~(1 << index)
+            self |= (newValue << index)
+            
+            shouldEraseLeadingZeros = true
         }
     }
     
@@ -328,11 +394,15 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
             (size > index) ? self[index] : 0
         }
         set {
-            if size <= index {
-                array.append(newValue)
-            } else {
-                self[index] = newValue
+            self.shouldEraseLeadingZeros = true
+            
+            while size <= index {
+                array.append(0)
             }
+            
+            self[index] = newValue
+            
+            self.shouldEraseLeadingZeros = false
         }
     }
     

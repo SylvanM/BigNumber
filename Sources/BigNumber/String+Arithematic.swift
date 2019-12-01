@@ -17,7 +17,7 @@ public extension String {
     ///     - right: Character
     ///
     /// - Returns: The string with the appended character
-    static func +(left: String, right: Character) -> String {
+    static func + (left: String, right: Character) -> String {
         var newString = left
         newString.append(right)
         return newString
@@ -30,7 +30,8 @@ public extension String {
     ///     - right: Character
     ///
     /// - Returns: The string with the appended character
-    @discardableResult static func += (left: inout String, right: Character) -> String {
+    @discardableResult
+    static func += (left: inout String, right: Character) -> String {
         left = left + right
         return left
     }
