@@ -8,42 +8,70 @@
 
 import Foundation
 
-/// Convenience typealias
+/// An unsigned ```UBigNumber``` object
 public typealias UBN = UBigNumber
 
-/// A BigNumber object
-///
-/// An unsigned integer type that has dynamically allocated memory
+/**
+ * An unsigned integer type of unfixed size
+ */
 public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, UnsignedInteger, Hashable {
     
-    /// I have no idea what this means in this context
-    public var words: UInt64.Words {
-        return UInt64.Words(array[0])
-    }
-    
-    public typealias Words = UInt64.Words
-    
     // MARK: - Typealiases
+    
+    /// Word type of ```UBigNumber```
+    public typealias Words = UInt64.Words
     
     /// The element type in the ```UBN``` array
     public typealias ArrayLiteralElement = UInt64
     
     /// The integer literal type
-    public typealias IntegerLiteralType = Int
+    public typealias IntegerLiteralType = UInt64
     
+    // MARK: - Private Properties
+    
+    /// Whether or not the BN should automatically optimize storage
+    ///
+    /// When set to ```true```, the BN will always get rid of leading zeros
+    ///
+    /// In order to prevent errors where someone may forget to enable this after disabling it, you cannot directly set this value. Instead, you can only
+    /// get a copy of the BN with this value set to ```true``` or ```false```.
+    ///
+    /// It is very much **not** reccommended to do
+    /// ```swift
+    /// let a: BN = 0
+    /// a = a.keepingLeadingZeros
+    /// ```
+    /// Instead, just store it to another variable
+    internal var shouldEraseLeadingZeros = true {
+        didSet {
+            if shouldEraseLeadingZeros {
+                while array.last == 0 && array.count > 1 {
+                    array.removeLast()
+                }
+            }
+        }
+    }
+    
+    // MARK: - Public Properties
+    
+    /// A version of this number which regularly clears leading zeros
     public var erasingLeadingZeros: UBigNumber {
         var a = self
         a.shouldEraseLeadingZeros = true
         return a
     }
     
+    /// A version of this number which does not regularly clear leading zeros
     public var keepingLeadingZeros: UBigNumber {
         var a = self
         a.shouldEraseLeadingZeros = false
         return a
     }
     
-    // MARK: - Properties
+    /// Words of the UBigNumber
+    public var words: UInt64.Words {
+        return UInt64.Words(array[0])
+    }
     
     /// The array representation of the ```BN```, in Little-Endian format
     public var array: [UInt64] = [] {
@@ -83,29 +111,6 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
             }
         }
         return zeros
-    }
-    
-    /// Whether or not the BN should automatically optimize storage
-    ///
-    /// When set to ```true```, the BN will always get rid of leading zeros
-    ///
-    /// In order to prevent errors where someone may forget to enable this after disabling it, you cannot directly set this value. Instead, you can only
-    /// get a copy of the BN with this value set to ```true``` or ```false```.
-    ///
-    /// It is very much **not** reccommended to do
-    /// ```swift
-    /// let a: BN = 0
-    /// a = a.keepingLeadingZeros
-    /// ```
-    /// Instead, just store it to another variable
-    private var shouldEraseLeadingZeros = true {
-        didSet {
-            if shouldEraseLeadingZeros {
-                while array.last == 0 && array.count > 1 {
-                    array.removeLast()
-                }
-            }
-        }
     }
     
     /// Hex string representation of the ```BN```
@@ -152,6 +157,11 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     /// Hex string description of the BN used when being printed
     public var description: String {
         "0x" + hexString
+    }
+    
+    /// Checks if the last bit is set
+    public var lastBitIsSet: Bool {
+        array[0] % 2 == 1
     }
     
     // MARK: - Initializers
@@ -230,9 +240,15 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     /// Creates a new instance of ```UBigNumber``` from the given integer
     ///
     /// May result in a runtime error if ```source``` is not representable as a UBigNumber
-    ///
-    /// - Returns:
     public init<T>(_ source: T) where T : BinaryInteger {
+        if source is UBigNumber {
+            self.array = (source as! UBigNumber).array
+            return
+        }
+        if source is BigNumber {
+            self.array = (source as! BigNumber).magnitude.array
+            return
+        }
         self.array = [UInt64(source)]
     }
     
@@ -240,7 +256,7 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     ///
     /// - Parameters:
     ///     - value: The value of the integer literal
-    public init(integerLiteral value: Int) {
+    public init(integerLiteral value: UInt64) {
         assert(value >= 0, "Integer literal must be an unsigned integer")
         self.init([UInt64(value)])
     }
@@ -301,6 +317,23 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
         self.array = [UInt64(integer)]
     }
     
+    // MARK: - Static Methods
+    
+    /// Returns a random ```UBN of a specified word size```
+    ///
+    /// This uses Apples secure random bytes generator
+    ///
+    /// - Parameters:
+    ///     - words: Amount of words in randomly generated ```UBN```
+    ///     - generator: Generator to use (degault is ```kSecRandomDefault```)
+    ///
+    /// - Returns: Random ```UBN```
+    static func random(words size: Int, generator: SecRandomRef? = kSecRandomDefault) -> UBigNumber {
+        var array = [UInt64](repeating: 0, count: size)
+        _ = SecRandomCopyBytes(generator, size * 8, &array) // we dont care about silly error codes, when were they ever important?
+        return UBN(array)
+    }
+    
     // MARK: - Methods
     
     /// Changes Whether or not the BN should automatically optimize storage
@@ -340,13 +373,28 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     
     // MARK: - Subscripts
     
-    /// References the array value at the given index
+    /// References the array value at the given index. If the index does not exist, it creates it or returns 0.
     subscript (index: Int) -> UInt64 {
         get {
-            array[index]
+            array.count > index ? array[index] : 0
         }
         set {
-            array[index] = newValue
+            
+            if array.count > index {
+                array[index] = newValue
+                return
+            }
+            
+            setShouldEraseLeadingZeros(to: false)
+            
+            while array.count < index - 1 {
+                array.append(0)
+            }
+            
+            array.append(newValue)
+            
+            setShouldEraseLeadingZeros(to: true)
+            
         }
     }
     
@@ -358,7 +406,7 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
         }
         set {
             self &= ~(1 << index)
-            self |= (newValue << index)
+            self |= UBigNumber(newValue << index)
         }
     }
     
@@ -375,34 +423,9 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
             }
             
             self &= ~(1 << index)
-            self |= (newValue << index)
+            self |= UBigNumber(newValue << index)
             
             shouldEraseLeadingZeros = true
-        }
-    }
-    
-    /// Returns the indexed item of the array, or 0 if it does not exist
-    subscript (safe index: Int) -> UInt64 {
-        get {
-            (size > index) ? self[index] : 0
-        }
-    }
-    
-    /// Returns the indexed item of the array, or 0 if it does not exist
-    subscript (zeroing index: Int) -> UInt64 {
-        get {
-            (size > index) ? self[index] : 0
-        }
-        set {
-            self.shouldEraseLeadingZeros = true
-            
-            while size <= index {
-                array.append(0)
-            }
-            
-            self[index] = newValue
-            
-            self.shouldEraseLeadingZeros = false
         }
     }
     

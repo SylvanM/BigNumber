@@ -7,7 +7,8 @@
 
 import Foundation
 
-extension UBigNumber: BinaryInteger, Comparable {
+extension UBigNumber: BinaryInteger, Comparable, Equatable {
+    
     
     // MARK: - Casting
     
@@ -26,345 +27,6 @@ extension UBigNumber: BinaryInteger, Comparable {
         
     }
     
-    // MARK: Range Operators
-    
-    /// Returns all values between two values, inclusive
-    ///
-    /// - Parameters:
-    ///     - a: Lower bound
-    ///     - b: Upper bound
-    ///
-    /// - Returns: An array of all values between ```a``` and ```b```
-    public static func ... <RHS: BinaryInteger>(lhs: UBigNumber, rhs: RHS) -> ClosedRange<UBigNumber> {
-        ClosedRange<UBigNumber>(uncheckedBounds: (lower: lhs, upper: UBigNumber(rhs)))
-    }
-    
-    /// Returns all values between two values, excluding the upper bound
-    ///
-    /// - Parameters:
-    ///     - a: Lower bound
-    ///     - b: Upper bound
-    ///
-    /// - Returns: An array of all values between ```a``` and ```b```, excluding ```b```
-    public static func ..< <RHS: BinaryInteger>(lhs: UBigNumber, rhs: RHS) -> Range<UBigNumber> {
-        Range<UBigNumber>(uncheckedBounds: (lower: lhs, upper: UBigNumber(rhs)))
-    }
-    
-    // MARK: - Bitwise Operations
-    
-    /// One's compliment
-    ///
-    /// - Parameters:
-    ///     - rhs: The BigNumber to get the compliment of
-    ///
-    /// - Returns: The binary compliment of the BigNumber
-    public static prefix func ~ (rhs: UBigNumber) -> UBigNumber {
-        UBigNumber( rhs.array.map { ~($0) } )
-    }
-    
-    /// Bitwise OR operator
-    ///
-    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise OR operation, returning the resulting BigNumber
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber
-    ///
-    /// - Returns: Bitwise OR of the two BigNumbers
-    public static func | <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        // get the larger BigNumber
-        
-        var a = lhs.keepingLeadingZeros
-        var b = UBN(rhs).keepingLeadingZeros
-        
-        matchSizes(a: &a, b: &b)
-        
-        // OR every UInt64 in a with b
-        for i in 0..<a.size {
-            a[i] |= b[i]
-        }
-        
-        return a.erasingLeadingZeros
-    }
-    
-    /// Bitwise AND operator
-    ///
-    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise AND operation, returning the resulting BigNumber
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber
-    ///
-    /// - Returns: Bitwise AND of the two BigNumbers with a size of the larger BigNumber
-    public static func & <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        // get the larger BigNumber
-        
-        var a = lhs.keepingLeadingZeros
-        var b = UBN(rhs).keepingLeadingZeros
-        
-        matchSizes(a: &a, b: &b)
-        
-        // AND every UInt64 in a with b
-        for i in 0..<a.size {
-            a[i] &= b[i]
-        }
-        
-        return a.erasingLeadingZeros
-    }
-    
-    /// Bitwise XOR operator
-    ///
-    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise XOR operation, returning the resulting BigNumber
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber
-    ///
-    /// - Returns: Bitwise XOR of the two BigNumbers with a size of the larger BigNumber
-    public static func ^ <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        // get the larger BigNumber
-        
-        var a = ((lhs.size >= UBN(rhs).size) ? lhs : UBN(rhs)).keepingLeadingZeros
-        var b = ((UBN(rhs).size >  lhs.size) ? lhs : UBN(rhs)).keepingLeadingZeros
-        
-        matchSizes(a: &a, b: &b)
-        
-        // XOR every UInt64 in a with b
-        for i in 0..<a.size {
-            a[i] ^= b[i]
-        }
-        
-        return a.erasingLeadingZeros
-    }
-    
-    /// Left bitshifts the given BigNumber by a given integer amount, with no overflow handling
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber to bitshift
-    ///     - rhs: Amount to bit shift
-    ///
-    /// - Returns: Exactly what you would expect
-    static func &<< <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        var a = lhs.keepingLeadingZeros
-        
-        for i in (1..<a.array.count).reversed() {
-            a[i] <<= Int(rhs)
-            a[i] += a[i-1] >> (64 - rhs)
-        }
-        a[0] <<= 1
-        
-        return a
-        
-    }
-    
-    /// Left bitshifts the given BigNumber by a given integer amount with overflow handling. When the result would be of a bigger size than the
-    /// given ```BN```, a new ```UInt64``` is appended to the array
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber to bitshift
-    ///     - rhs: Amount to bit shift
-    ///
-    /// - Returns: Exactly what you would expect
-    public static func << <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        var a = lhs.keepingLeadingZeros
-        a.array.append(0)
-        // I know this isn't the most efficient way of doing this
-        // I sorta just scrapped this together
-        for _ in 0..<rhs {
-
-            // left bit shift a by 1
-            for i in (1..<a.array.count).reversed() {
-                // get bit about to be discarded
-                if a[i] >> 63 == 1 {
-                    a.array.append(a[i] >> 63)
-                }
-
-                a[i] <<= 1
-                a[i] += a[i-1] >> 63 // "pull" bit from previous
-            }
-            a[0] <<= 1
-        }
-        
-        return a.erasingLeadingZeros
-        
-    }
-    
-    /// Right bitshifts the given BigNumber by a given integer amount
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber to bitshift
-    ///     - rhs: Amount to bit shift
-    ///
-    /// - Returns: Exactly what you would expect
-    #warning("Requires that rhs <= 64, I should fix this")
-    public static func >> <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        var a = lhs.keepingLeadingZeros
-        
-        for i in 0..<(a.size - 1) {
-            a[i] >>= Int(rhs)
-            a[i] += a[i+1] << (64 - rhs)
-        }
-        a[a.size - 1] >>= Int(rhs)
-        
-        return a
-        
-    }
-    
-    // MARK: Compound Assignment Bitwise Operators
-    
-    /// Stores the result of performing a bitwise OR operation on the two given
-    /// values in the left-hand-side variable.
-    ///
-    /// - Parameters:
-    ///   - lhs: A BigNumber value.
-    ///   - rhs: Another BigNumber value.
-    public static func |= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        let largerSize: Int = {
-            let x = a.size
-            let y = a.size
-            return x >= y ? x : y
-        }()
-        
-        for i in 0..<largerSize {
-            
-            // make sure lhs is a valid size so we can actually assign values
-            while a.size < i {
-                a.array.append(0x0)
-            }
-            
-            // now do the OR!
-            a[i] |= UBN(rhs)[safe: i]
-        }
-    }
-    
-    /// Stores the result of performing a bitwise AND operation on the two given
-    /// values in the left-hand-side variable.
-    ///
-    /// - Parameters:
-    ///   - lhs: A BigNumber value.
-    ///   - rhs: Another BigNumber value.
-    public static func &= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        let b = UBN(rhs)
-        
-        for i in 0..<a.size {
-            
-            // make sure lhs is a valid size so we can actually assign values
-            while a.size < i {
-                a.array.append(0x0)
-            }
-            
-            // now do the AND!
-            a[i] &= b[safe: i]
-        }
-
-    }
-    
-    /// Stores the result of performing a bitwise XOR operation on the two given
-    /// values in the left-hand-side variable.
-    ///
-    /// - Parameters:
-    ///   - lhs: A BigNumber value.
-    ///   - rhs: Another BigNumber value.
-    @discardableResult
-    public static func ^= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger /*-> BigNumber*/ {
-        let largerSize: Int = {
-            let x = a.size
-            let y = UBN(rhs).size
-            return x >= y ? x : y
-        }()
-        
-        for i in 0..<largerSize {
-            
-            // make sure lhs is a valid size so we can actually assign values
-            while a.size < i {
-                a.array.append(0x0)
-            }
-            
-            // now do the XOR!
-            a[i] ^= UBN(rhs)[safe: i]
-        }
-        
-    }
-    
-    /// Left bitshifts a value by another, and stores the result in the left hand side variable, with no overflow handling
-    ///
-    /// - Parameters:
-    ///     - a: value to left bitshift
-    ///     - b: amoutnt by which to left bitshift
-    public static func &<<= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        a.setShouldEraseLeadingZeros(to: false)
-        
-        for _ in 0..<rhs {
-            // left bit shift a by 1
-            for i in (1..<a.array.count).reversed() {
-                // get bit about to be discarded
-                a[i] <<= 1
-                a[i] += a[i-1] >> 63
-            }
-            a[0] <<= 1
-        }
-        
-        a.setShouldEraseLeadingZeros(to: false)
-    }
-    
-    /// Left bitshifts a value by another, and stores the result in the left hand side variable
-    ///
-    /// - Parameters:
-    ///     - a: value to left bitshift
-    ///     - b: amoutnt by which to left bitshift
-    public static func <<= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        a.setShouldEraseLeadingZeros(to: false)
-        
-        // I know this isn't the most efficient way of doing this
-        // I sorta just scrapped this together
-        for _ in 0..<rhs {
-            
-            // left bit shift a by 1
-            for i in (1..<a.array.count).reversed() {
-                // get bit about to be discarded
-                if a[i] >> 63 == 1 {
-                    a.array.append(a[i] >> 63)
-                }
-                
-                a[i] <<= 1
-                a[i] += a[i-1] >> 63 // "pull" bit from previous
-            }
-            a[0] <<= 1
-        }
-        
-        a.setShouldEraseLeadingZeros(to: true)
-    }
-    
-    /// Right bitshifts a value by another, and stores the result in the left hand side variable
-    /// Currently, this only actually works when bitshifting by a number smaller than 64. :(
-    ///
-    /// - Parameters:
-    ///     - a: value to right bitshift
-    ///     - b: amoutnt by which to right bitshift
-    public static func >>= <RHS>(a: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        a.setShouldEraseLeadingZeros(to: false)
-        
-        for i in 0..<(a.array.count) {
-            a[i] >>= rhs
-            a[i] += a[safe: i+1] << (64 - rhs)
-        }
-        
-//        for _ in 0..<rhs {
-//            // right bit shift a by 1
-//            for i in 0..<(a.array.count-1) {
-//                a[i] >>= 1
-//                if (a[i] & (1 << 63)) != (a[i+1] & 1) {
-//                    a[i] ^= 1 << 63
-//                }
-//            }
-//            a[a.array.count-1] >>= 1
-//        }
-        
-        a.setShouldEraseLeadingZeros(to: true)
-    }
-    
-    // TODO: Do bit shift operators
-    
     // MARK: - Comparative Operators
     
     /// Compares two BigNumbers, returns true if they are equal
@@ -375,19 +37,10 @@ extension UBigNumber: BinaryInteger, Comparable {
     ///
     /// - Returns: True if they are equal, false if not
     public static func == (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
-        
         let a = lhs.erasingLeadingZeros
         let b = rhs.erasingLeadingZeros
-        
-        guard a.size == b.size else { return false }
-        
-        for i in 0..<a.size {
-            if a[i] != b[i] {
-                return false
-            }
-        }
-        
-        return true
+
+        return a.array == b.array
     }
     
     /// Compares two BigNumbers and retuns true if they are not equal
@@ -470,39 +123,311 @@ extension UBigNumber: BinaryInteger, Comparable {
         return lhs < rhs || lhs == rhs
     }
     
-    // MARK: - Arithmetic Operators
+    // MARK: - Range Operators
     
-    /// Adds two BigNumbers, with overflow allowed
+    /// Returns all values between two values, inclusive
     ///
-    /// This won't add any elements to the BigNumber array
+    /// - Parameters:
+    ///     - a: Lower bound
+    ///     - b: Upper bound
+    ///
+    /// - Returns: An array of all values between ```a``` and ```b```
+    public static func ... <RHS: BinaryInteger>(lhs: UBigNumber, rhs: RHS) -> ClosedRange<UBigNumber> {
+        ClosedRange<UBigNumber>(uncheckedBounds: (lower: lhs, upper: UBigNumber(rhs)))
+    }
+    
+    /// Returns all values between two values, excluding the upper bound
+    ///
+    /// - Parameters:
+    ///     - a: Lower bound
+    ///     - b: Upper bound
+    ///
+    /// - Returns: An array of all values between ```a``` and ```b```, excluding ```b```
+    public static func ..< <RHS: BinaryInteger>(lhs: UBigNumber, rhs: RHS) -> Range<UBigNumber> {
+        Range<UBigNumber>(uncheckedBounds: (lower: lhs, upper: UBigNumber(rhs)))
+    }
+    
+    // MARK: - Bitwise Operators
+    
+    /// Stores the result of performing a bitwise OR operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    public static func |= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        let b = UBN(rhs)
+        for i in 0..<maxOf(lhs.size, b.size) {
+            lhs[i] |= b[i]
+        }
+    }
+    
+    /// Stores the result of performing a bitwise AND operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    public static func &= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        let b = UBN(rhs)
+        for i in 0..<maxOf(lhs.size, b.size) {
+            lhs[i] &= b[i]
+        }
+    }
+    
+    /// Stores the result of performing a bitwise XOR operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    public static func ^= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        let b = UBN(rhs)
+        for i in 0..<maxOf(lhs.size, b.size) {
+            lhs[i] ^= b[i]
+        }
+    }
+    
+    /// Left bitshifts a value by another, and stores the result in the left hand side variable, with no overflow handling
+    ///
+    /// - Parameters:
+    ///     - a: value to left bitshift
+    ///     - b: amoutnt by which to left bitshift
+    public static func &<<= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.setShouldEraseLeadingZeros(to: false)
+        
+        if lhs.size == 0 || rhs == 0 {
+            lhs.setShouldEraseLeadingZeros(to: true)
+            return
+        }
+        
+        let wordShift: Int = Int(rhs / 64) // words to shift by
+        let bitShift:  Int = Int(rhs % 64) // bits going to be shifted
+        
+        // shift by the words, then by the bits
+        // aka shift the array, then shift the bits by bitShift
+        for i in (0..<lhs.size).reversed() {
+            if wordShift > i {
+                lhs[i] = 0
+                continue
+            }
+            lhs[i] = lhs[i - wordShift]
+        }
+        
+        // now shift the bits
+        for i in (1..<lhs.size).reversed() {
+            lhs[i] &<<= bitShift
+            lhs[i] += lhs[i-1] >> (64 - bitShift)
+        }
+        lhs[0] &<<= bitShift
+        
+        lhs.setShouldEraseLeadingZeros(to: true)
+    }
+    
+    /// Left bitshifts a value by another, and stores the result in the left hand side variable
+    ///
+    /// - Parameters:
+    ///     - a: value to left bitshift
+    ///     - b: amoutnt by which to left bitshift
+    public static func <<= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.setShouldEraseLeadingZeros(to: false)
+        
+        if lhs.size == 0 || rhs == 0 {
+            lhs.setShouldEraseLeadingZeros(to: true)
+            return
+        }
+        
+        let wordShift: Int = Int(rhs / 64) // words to shift by
+        let bitShift:  Int = Int(rhs % 64) // bits going to be shifted
+        
+        // shift by the words, then by the bits
+        // aka shift the array, then shift the bits by bitShift
+        let newSize = wordShift + lhs.size
+        while lhs.size < newSize {
+            lhs.array.append(0)
+        }
+        
+        for i in (0..<lhs.size).reversed() {
+            if wordShift > i {
+                lhs[i] = 0
+                continue
+            }
+            lhs[i] = lhs[i - wordShift]
+        }
+        
+        // now shift the bits
+        
+        // if the last bitShift bits of the last element of a are nonzero, then we have to allocate new memory
+        // because they will be carried to a new array element
+        
+        if lhs[lhs.size - 1] >> (64 - UInt64(bitShift)) > 0 {
+            lhs.array.append(0)
+        }
+        
+        for i in (1..<lhs.size).reversed() {
+            lhs[i] &<<= bitShift
+            lhs[i] += lhs[i-1] >> (64 - bitShift)
+        }
+        lhs[0] &<<= bitShift
+        
+        lhs.setShouldEraseLeadingZeros(to: true)
+    }
+    
+    /// Right bitshifts a value by another, and stores the result in the left hand side variable
+    /// Currently, this only actually works when bitshifting by a number smaller than 64. :(
+    ///
+    /// - Parameters:
+    ///     - a: value to right bitshift
+    ///     - b: amoutnt by which to right bitshift
+    public static func >>= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.setShouldEraseLeadingZeros(to: false)
+        
+        if lhs.size == 0 || rhs == 0 {
+            lhs.setShouldEraseLeadingZeros(to: true)
+            return
+        }
+        
+        let wordShift: Int = Int(rhs / 64) // words to shift by
+        let bitShift:  Int = Int(rhs % 64) // bits going to be shifted
+    
+        // shift by the words, then by the bits
+        // aka shift the array, then shift the bits by bitShift
+        for i in (0..<lhs.size) {
+            if wordShift + i >= lhs.size {
+                lhs[i] = 0
+                continue
+            }
+            lhs[i] = lhs[i + wordShift]
+        }
+        
+        // now shift the bits
+        
+        for i in 0..<(lhs.size - 1) {
+            lhs[i] >>= bitShift
+            lhs[i] += lhs[i+1] << (64 - bitShift)
+        }
+        lhs[lhs.size-1] >>= bitShift
+        
+        lhs.setShouldEraseLeadingZeros(to: true)
+    }
+    
+    /// One's compliment
+    ///
+    /// - Parameters:
+    ///     - rhs: The BigNumber to get the compliment of
+    ///
+    /// - Returns: The binary compliment of the BigNumber
+    public static prefix func ~ (rhs: UBigNumber) -> UBigNumber {
+        UBigNumber( rhs.array.map { ~($0) } )
+    }
+    
+    /// Bitwise OR operator
+    ///
+    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise OR operation, returning the resulting BigNumber
     ///
     /// - Parameters:
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: Sum of lhs and rhs without overflow prevention
-    public static func &+ (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        var r = UBigNumber(0).keepingLeadingZeros
-        let a = lhs.keepingLeadingZeros
-        let b = rhs.keepingLeadingZeros
+    /// - Returns: Bitwise OR of the two BigNumbers
+    public static func | <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a |= rhs
+        return a
+    }
+    
+    /// Bitwise AND operator
+    ///
+    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise AND operation, returning the resulting BigNumber
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: Bitwise AND of the two BigNumbers with a size of the larger BigNumber
+    public static func & <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a &= rhs
+        return a
+    }
+    
+    /// Bitwise XOR operator
+    ///
+    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise XOR operation, returning the resulting BigNumber
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: Bitwise XOR of the two BigNumbers with a size of the larger BigNumber
+    public static func ^ <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a ^= rhs
+        return a
+    }
+    
+    /// Left bitshifts the given BigNumber by a given integer amount, with no overflow handling
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to bitshift
+    ///     - rhs: Amount to bit shift
+    ///
+    /// - Returns: Exactly what you would expect
+    static func &<< <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a &<<= rhs
+        return a
+    }
+    
+    /// Left bitshifts the given BigNumber by a given integer amount with overflow handling. When the result would be of a bigger size than the
+    /// given ```BN```, a new ```UInt64``` is appended to the array
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to bitshift
+    ///     - rhs: Amount to bit shift
+    ///
+    /// - Returns: Exactly what you would expect
+    public static func << <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a <<= rhs
+        return a
+    }
+    
+    /// Right bitshifts the given BigNumber by a given integer amount
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to bitshift
+    ///     - rhs: Amount to bit shift
+    ///
+    /// - Returns: Exactly what you would expect
+    public static func >> <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a >>= rhs
+        return a
+    }
+    
+    // MARK: Arithmetic Operators
+    
+    public static func &+= (lhs: inout UBigNumber, rhs: UBigNumber) {
         
         var carryOut: UInt64 = 0
         var carryIn:  UInt64 = 0
         
         let largerSize: Int = {
-            let x = a.size
-            let y = b.size
+            let x = lhs.size
+            let y = UBN(rhs).size
             return x >= y ? x : y
         }()
         
         for i in 0..<largerSize {
-            r[zeroing: i] = a[zeroing: i] &+ b[zeroing: i]
-            if r[i] < a[zeroing: i] {
+            let overflowStatus = lhs[i].addingReportingOverflow(UBN(rhs)[i])
+            lhs[i] = overflowStatus.partialValue
+            if overflowStatus.overflow {
                 carryOut = 1
             }
             if carryIn != 0 {
-                r[i] &+= 1
-                if ( 0 == r[i]) {
+                lhs[i] &+= 1
+                if ( 0 == lhs[i] ) {
                     carryOut = 1
                 }
             }
@@ -510,187 +435,8 @@ extension UBigNumber: BinaryInteger, Comparable {
             carryOut = 0
         }
         
-        return r.erasingLeadingZeros
+        lhs.setShouldEraseLeadingZeros(to: true)
     }
-    
-    /// Adds two BigNumbers
-    ///
-    /// This will add elements to the array if needed
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber to add
-    ///     - rhs: BigNumber to add
-    ///
-    /// - Returns: Sum of ```lhs``` and ```rhs```
-    public static func + (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        
-        var r = UBigNumber(0).keepingLeadingZeros
-        let a = lhs.keepingLeadingZeros
-        let b = rhs.keepingLeadingZeros
-        
-        var carryOut: UInt64 = 0
-        var carryIn:  UInt64 = 0
-        
-        let largerSize: Int = {
-            let x = a.size
-            let y = b.size
-            return x >= y ? x : y
-        }()
-        
-        for i in 0...largerSize {
-            r[zeroing: i] = a[zeroing: i] &+ b[zeroing: i]
-            if r[i] < a[zeroing: i] {
-                carryOut = 1
-            }
-            if carryIn != 0 {
-                r[i] &+= 1
-                if ( 0 == r[i]) {
-                    carryOut = 1
-                }
-            }
-            carryIn = carryOut
-            carryOut = 0
-        }
-        
-        return r.erasingLeadingZeros
-    }
-    
-    
-    
-    /// Subtraction
-    ///
-    /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber to subtract from ```lhs```
-    ///
-    /// - Returns: Difference of ```lhs``` and ```rhs```
-    public static func - (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        // cast smaller BigNumber to larger array
-        //
-        // note: in this operation, the numbers are treated as raw arrays, NOT BigNumber objects.
-        // this is because a BigNumber will automatically get rid of leading zeros, which we actually need in order
-        // to make sure the numbers have the same size of array
-        
-        var a = lhs.keepingLeadingZeros
-        var b = rhs.keepingLeadingZeros
-        
-        // make sure both are the same size
-        
-        let size = maxOf(a.size, b.size)
-        
-        while a.size < size {
-            a.array.append(0)
-        }
-        
-        while b.size < size {
-            b.array.append(0)
-        }
-        
-        // Now do two's compliment subtraction and return
-        return ((~b &+ 1) &+ a).erasingLeadingZeros
-    }
-    
-    /// Multiplies two BigNumbers
-    ///
-    /// - Parameters:
-    ///     - lhs: A BigNumber to multiply
-    ///     - rhs: A BigNumber to multiply
-    ///
-    /// - Returns: Product of ```lhs``` and ```rhs```
-    public static func * (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        var (a, b, product) : (UBigNumber, UBigNumber, UBigNumber) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros, 0)
-        
-        matchSizes(a: &a, b: &b)
-        
-        var i = 0
-        
-        while ( b > 0 ) {
-            if (b & 1 == 1) {
-                product = product + a << i
-            }
-            
-            i += 1
-            b = b >> 1
-        }
-        
-        return product.erasingLeadingZeros
-    }
-    
-    /// Divides two BigNumbers
-    ///
-    /// - Parameters:
-    ///     - lhs: A BigNumber to divide
-    ///     - rhs: BigNumber to divide ```rhs``` by
-    ///
-    /// - Returns: Product of ```lhs``` and ```rhs```
-    public static func / (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        
-        assert(rhs != 0, "Cannot divide by 0")
-        
-        var (a, b) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros)
-        
-        // make them have the same size
-        let size = maxOf(a.size, b.size)
-        
-        while a.size < size {
-            a.array.append(0)
-        }
-        
-        while b.size < size {
-            b.array.append(0)
-        }
-        
-        // now do the division
-        
-        var (quotient, remainder) : (UBigNumber, UBigNumber) = (0, 0)
-        
-        for i in (0..<b.bitWidth).reversed() {
-            quotient = quotient << 1
-            remainder = remainder << 1
-            
-            remainder |= (a & (UBigNumber(1) << i)) >> i
-            
-            if (remainder >= b) {
-                remainder = remainder - b;
-                quotient |= 1;
-            }
-        }
-        
-        return quotient
-    }
-    
-    /// Modulo operation for two ```BigNumber```'s
-    ///
-    /// - Parameters:
-    ///     - lhs: ```BigNumber``` to modulo by another ```BigNumber```
-    ///     - rhs: ```BigNumber``` by which to modulo
-    ///
-    /// - Returns: ```lhs``` modulo ```rhs```
-    public static func % (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        assert(rhs != 0, "Cannot divide by 0")
-        
-        var (a, b) = (lhs.keepingLeadingZeros, rhs.keepingLeadingZeros)
-        
-        matchSizes(a: &a, b: &b)
-        
-        // now do the division
-        
-        var remainder: UBigNumber = 0
-        
-        for i in (0..<b.bitWidth).reversed() {
-            remainder = remainder << 1
-            
-            remainder |= (a & (UBigNumber(1) << i)) >> i
-            
-            if (remainder >= b) {
-                remainder = remainder - b;
-            }
-        }
-        
-        return remainder
-    }
-    
-    // MARK: Compound Assignment Arithmetic Operators
     
     /// Adds two BigNumbers and assigns the sum to the left operand
     ///
@@ -701,27 +447,140 @@ extension UBigNumber: BinaryInteger, Comparable {
     ///     - rhs: BigNumber to add to ```a```
     ///
     /// - Returns: Sum of ```a``` and ```rhs```
-    public static func += (a: inout UBigNumber, rhs: UBigNumber) {
-        a = a + rhs
+    public static func += <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        var carryOut: UInt64 = 0
+        var carryIn:  UInt64 = 0
+        
+        let b = UBN(rhs)
+        
+        let largerSize: Int = {
+            let x = lhs.size
+            let y = b.size
+            return x >= y ? x : y
+        }()
+        
+        for i in 0..<largerSize {
+            let overflowStatus = lhs[i].addingReportingOverflow(b[i])
+            lhs[i] = overflowStatus.partialValue
+            
+            if overflowStatus.overflow {
+                carryOut = 1
+            }
+            
+            if carryIn != 0 {
+                lhs[i] &+= 1
+                if ( 0 == lhs[i] ) {
+                    carryOut = 1
+                }
+            }
+            
+            if carryOut == 1 && i == lhs.size - 1 {
+                lhs.array.append(1)
+            }
+            
+            carryIn = carryOut
+            carryOut = 0
+        }
+        
+        lhs.setShouldEraseLeadingZeros(to: true)
     }
     
-    public static func -= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        lhs = lhs - rhs
+    public static func -= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs = ((UBN(~rhs) &+ 1) &+ lhs).erasingLeadingZeros
+    }
+
+    /**
+     * Multiplication Assignment operator
+     *
+     * This works by computing the sum of all products of each factor of 2 of the rhs with lhs
+     *
+     * That is mathematically true because, for example, if the multiplier is 0b110010 and the multicand is n, then:
+     * n • (0b110010) = n • (0b100000 + 0b10000 + 0b10) = n • 0b100000 + n • 0b10000 + n • 0b10
+     *
+     * - Parameters:
+     *      - lhs: multiplicand
+     *      - rhs: multiplier
+     */
+    public static func *= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        
+        // I'm making these two different if statements so that it runs faster,
+        // and in the event of the first one being true, it doesn't have to execute the second
+        
+        if lhs == 0 {
+            return
+        }
+        
+        if rhs == 0 {
+            lhs = 0
+            return
+        }
+        
+        var a = rhs
+        var i = 0
+        
+        while (a % 2) == 0 {
+            a >>= 1
+            i += 1
+        }
+        
+        let originalLHS = lhs
+        
+        lhs <<= i
+        
+        while a != 0 {
+            
+            a >>= 1
+            i += 1
+            
+            if (a % 2) == 1 {
+                lhs += originalLHS << i
+            }
+        }
     }
     
-    public static func *= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        lhs = lhs * rhs
+    /**
+     * No idea how this is going to work :(
+     */
+    public static func /= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+        // I'm making these two different if statements so that it runs faster,
+        // and in the event of the first one being true, it doesn't have to execute the second
+        
+        if rhs == 0 {
+            fatalError("Cannot divide by 0")
+        }
+        
+        if lhs == 0 {
+            return
+        }
+        
+        var a = rhs
+        var i = 0
+        
+        while (a % 2) == 0 {
+            a >>= 1
+            i += 1
+        }
+        
+        let originalLHS = lhs
+        
+        lhs >>= i
+        
+        while a != 0 {
+            
+            a >>= 1
+            i += 1
+            
+            if (a % 2) == 1 {
+                lhs += originalLHS >> i
+            }
+        }
     }
     
-    public static func /= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        lhs = lhs / rhs
-    }
-    
-    public static func %= (lhs: inout UBigNumber, rhs: UBigNumber) {
+    public static func %= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
         assert(rhs != 0, "Cannot divide by 0")
         
         let a = lhs
-        var b = rhs.keepingLeadingZeros
+        var b = UBN(rhs).keepingLeadingZeros
         
         matchSizes(a: &lhs, b: &b)
         
@@ -740,11 +599,94 @@ extension UBigNumber: BinaryInteger, Comparable {
         lhs.setShouldEraseLeadingZeros(to: true)
     }
     
+    /// Adds two BigNumbers, with no overflow handling
+    ///
+    /// This won't add any elements to the BigNumber array
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: Sum of lhs and rhs without overflow prevention
+    public static func &+ (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a &+= rhs
+        return a
+    }
     
+    /// Adds two BigNumbers
+    ///
+    /// This will add elements to the array if needed
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to add
+    ///     - rhs: BigNumber to add
+    ///
+    /// - Returns: Sum of ```lhs``` and ```rhs```
+    public static func + (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a += rhs
+        return a
+    }
+    
+    /// Subtraction
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber to subtract from ```lhs```
+    ///
+    /// - Returns: Difference of ```lhs``` and ```rhs```
+    public static func - (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a -= rhs
+        return a
+    }
+    
+    /// Multiplies two BigNumbers
+    ///
+    /// - Parameters:
+    ///     - lhs: A BigNumber to multiply
+    ///     - rhs: A BigNumber to multiply
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    public static func * (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a *= rhs
+        return a
+    }
+    
+    /// Divides two BigNumbers
+    ///
+    /// - Parameters:
+    ///     - lhs: A BigNumber to divide
+    ///     - rhs: BigNumber to divide ```rhs``` by
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    public static func / (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a /= rhs
+        return a
+    }
+    
+    /// Modulo operation for two ```BigNumber```'s
+    ///
+    /// - Parameters:
+    ///     - lhs: ```BigNumber``` to modulo by another ```BigNumber```
+    ///     - rhs: ```BigNumber``` by which to modulo
+    ///
+    /// - Returns: ```lhs``` modulo ```rhs```
+    public static func % (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a %= rhs
+        return a
+    }
     
     // MARK: Private functions
     
     /// Returns the maximum of two comparables
+    ///
+    /// This function is being added to avoid ambiguity with the static property ```max``` which was giving me errors because
+    /// a ```UBigNumber``` does not conform to ```FixedWidthInteger```
     ///
     /// The reason this is being redeclafred is because of ambiguity errors
     ///
