@@ -7,9 +7,7 @@
 
 import Foundation
 
-extension BigNumber: BinaryInteger, Comparable {
-    
-    
+extension BigNumber: BinaryInteger, Comparable, Equatable {
 
     // MARK: - Comparison Operators
 

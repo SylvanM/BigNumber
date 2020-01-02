@@ -14,6 +14,8 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     
     /// Matches the sizes of ```a``` and ```b``` with each other. This will change the array size
     /// of the smaller one to the larger
+    ///
+    /// 
     static func matchSizes(a: inout UBigNumber, b: inout UBigNumber) {
         let size = maxOf(a.array.count, b.array.count)
         
@@ -447,7 +449,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     ///     - rhs: BigNumber to add to ```a```
     ///
     /// - Returns: Sum of ```a``` and ```rhs```
-    public static func += <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+    public static func += (lhs: inout UBigNumber, rhs: UBigNumber) {
         var carryOut: UInt64 = 0
         var carryIn:  UInt64 = 0
         
@@ -485,7 +487,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         lhs.setShouldEraseLeadingZeros(to: true)
     }
     
-    public static func -= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+    public static func -= (lhs: inout UBigNumber, rhs: UBigNumber) {
         lhs = ((UBN(~rhs) &+ 1) &+ lhs).erasingLeadingZeros
     }
 
@@ -501,7 +503,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
      *      - lhs: multiplicand
      *      - rhs: multiplier
      */
-    public static func *= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+    public static func *= (lhs: inout UBigNumber, rhs: UBigNumber) {
         
         // I'm making these two different if statements so that it runs faster,
         // and in the event of the first one being true, it doesn't have to execute the second
@@ -518,7 +520,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         var a = rhs
         var i = 0
         
-        while (a % 2) == 0 {
+        while (a[0] % 2) == 0 {
             a >>= 1
             i += 1
         }
@@ -532,8 +534,57 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
             a >>= 1
             i += 1
             
-            if (a % 2) == 1 {
+            if (a[0] % 2) == 1 {
                 lhs += originalLHS << i
+            }
+        }
+    }
+    
+    /**
+     * Multiplication Assignment operator with no overflow handling
+     *
+     * This works by computing the sum of all products of each factor of 2 of the rhs with lhs
+     *
+     * That is mathematically true because, for example, if the multiplier is 0b110010 and the multicand is n, then:
+     * n • (0b110010) = n • (0b100000 + 0b10000 + 0b10) = n • 0b100000 + n • 0b10000 + n • 0b10
+     *
+     * - Parameters:
+     *      - lhs: multiplicand
+     *      - rhs: multiplier
+     */
+    public static func &*= (lhs: inout UBigNumber, rhs: UBigNumber) {
+        
+        // I'm making these two different if statements so that it runs faster,
+        // and in the event of the first one being true, it doesn't have to execute the second
+        
+        if lhs == 0 {
+            return
+        }
+        
+        if rhs == 0 {
+            lhs = 0
+            return
+        }
+        
+        var a = rhs
+        var i = 0
+        
+        while (a[0] % 2) == 0 {
+            a >>= 1
+            i += 1
+        }
+        
+        let originalLHS = lhs
+        
+        lhs &<<= i
+        
+        while a != 0 {
+            
+            a >>= 1
+            i += 1
+            
+            if (a[0] % 2) == 1 {
+                lhs &+= originalLHS &<< i
             }
         }
     }
@@ -541,7 +592,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     /**
      * No idea how this is going to work :(
      */
-    public static func /= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+    public static func /= (lhs: inout UBigNumber, rhs: UBigNumber) {
         // I'm making these two different if statements so that it runs faster,
         // and in the event of the first one being true, it doesn't have to execute the second
         
@@ -556,7 +607,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         var a = rhs
         var i = 0
         
-        while (a % 2) == 0 {
+        while (a[0] % 2) == 0 {
             a >>= 1
             i += 1
         }
@@ -576,7 +627,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         }
     }
     
-    public static func %= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
+    public static func %= (lhs: inout UBigNumber, rhs: UBigNumber) {
         assert(rhs != 0, "Cannot divide by 0")
         
         let a = lhs
@@ -652,6 +703,19 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     public static func * (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
         var a = lhs
         a *= rhs
+        return a
+    }
+    
+    /// Multiplies two BigNumbers with no overflow handling
+    ///
+    /// - Parameters:
+    ///     - lhs: A BigNumber to multiply
+    ///     - rhs: A BigNumber to multiply
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    public static func &* (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+        var a = lhs
+        a &*= rhs
         return a
     }
     
