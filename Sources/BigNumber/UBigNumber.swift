@@ -54,6 +54,11 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     
     // MARK: - Public Properties
     
+    /// Whether or not this number is a power of two
+    public var isPowerOfTwo: Bool {
+        (self != 0) && (self & (self - 1) == 0)
+    }
+    
     /// A version of this number which regularly clears leading zeros
     public var erasingLeadingZeros: UBigNumber {
         var a = self
@@ -162,6 +167,23 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     /// Checks if the last bit is set
     public var lastBitIsSet: Bool {
         array[0] % 2 == 1
+    }
+    
+    /// Returns index of most significant bit
+    ///
+    /// Note: If the number is 0, this will return 0
+    public var mostSignificantBit: Int {
+        if self == 0 {
+            return 0
+        }
+        
+        var i = 0
+        
+        while self >> i != 0 {
+            i += 1
+        }
+        
+        return i
     }
     
     // MARK: - Initializers
@@ -324,14 +346,21 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
     /// This uses Apples secure random bytes generator
     ///
     /// - Parameters:
-    ///     - words: Amount of words in randomly generated ```UBN```
+    ///     - bytes: Amount of bytes in randomly generated ```UBN```
     ///     - generator: Generator to use (degault is ```kSecRandomDefault```)
     ///
     /// - Returns: Random ```UBN```
-    static func random(words size: Int, generator: SecRandomRef? = kSecRandomDefault) -> UBigNumber {
-        var array = [UInt64](repeating: 0, count: size)
-        _ = SecRandomCopyBytes(generator, size * 8, &array) // we dont care about silly error codes, when were they ever important?
+    static func random(bytes size: Int, generator: SecRandomRef? = kSecRandomDefault) -> UBigNumber {
+        
+        // simplify this, dude
+        let arraySize = size / 8 + ( size % 8 > 0 ? 1 : 0 )
+        
+        var array = [UInt64](repeating: 0, count: arraySize)
+        
+        _ = SecRandomCopyBytes(generator, size, &array) // we dont care about silly error codes, when were they ever important?
+        
         return UBN(array)
+        
     }
     
     // MARK: - Methods
@@ -405,17 +434,7 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
             (size * 64) - 1 > abs(index) ? (self >> index & UBN(1))[0] : 0
         }
         set {
-            self &= ~(1 << index)
-            self |= UBigNumber(newValue << index)
-        }
-    }
-    
-    /// References a bit with a specified index, with overflow handling.
-    subscript (bitWithOverflowHandling index: Int) -> UInt64 {
-        get {
-            self[bit: index]
-        }
-        set {
+            
             shouldEraseLeadingZeros = false
             
             for _ in 0..<((index / 8) + 1) {
@@ -426,7 +445,28 @@ public struct UBigNumber: CustomStringConvertible, ExpressibleByStringLiteral, E
             self |= UBigNumber(newValue << index)
             
             shouldEraseLeadingZeros = true
+//            self &= ~(1 << index)
+//            self |= UBigNumber(newValue << index)
         }
     }
+    
+    /// References a bit with a specified index, with overflow handling.
+//    subscript (bit index: Int) -> UInt64 {
+//        get {
+//            self[bit: index]
+//        }
+//        set {
+//            shouldEraseLeadingZeros = false
+//
+//            for _ in 0..<((index / 8) + 1) {
+//                self.array.append(0x0)
+//            }
+//
+//            self &= ~(1 << index)
+//            self |= UBigNumber(newValue << index)
+//
+//            shouldEraseLeadingZeros = true
+//        }
+//    }
     
 }

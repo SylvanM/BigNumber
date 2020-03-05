@@ -7,8 +7,17 @@
 
 import Foundation
 
+precedencegroup ExponentiationPrecedence {
+    higherThan: MultiplicationPrecedence
+    lowerThan: BitwiseShiftPrecedence
+    associativity: none
+    assignment: false
+}
+
+/// Exponentiation operator to be used with modular exponentiation modifier
+infix operator **: ExponentiationPrecedence
+
 extension UBigNumber: BinaryInteger, Comparable, Equatable {
-    
     
     // MARK: - Casting
     
@@ -41,7 +50,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     public static func == (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         let a = lhs.erasingLeadingZeros
         let b = rhs.erasingLeadingZeros
-
+        
         return a.array == b.array
     }
     
@@ -53,7 +62,10 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     ///
     /// - Returns: True if they are equal, false if not
     public static func != (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
-        return !(lhs == rhs)
+        let a = lhs.erasingLeadingZeros
+        let b = rhs.erasingLeadingZeros
+        
+        return a.array != b.array
     }
     
     /// Greater than operator
@@ -86,7 +98,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: True if lhs < rhs
+    /// - Returns: True if lhs is less than rhs
     public static func < (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         let a = lhs.erasingLeadingZeros
         let b = rhs.erasingLeadingZeros
@@ -109,7 +121,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: Trpublic ue if lhs >= rpublic hs
+    /// - Returns: Trpublic ue if lhs >= rhs
     public static func >= (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         return lhs > rhs || lhs == rhs
     }
@@ -120,7 +132,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: True if lhs <= rpublic hs
+    /// - Returns: True if `lhs` is less than or equal to
     public static func <= (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         return lhs < rhs || lhs == rhs
     }
@@ -150,6 +162,10 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     }
     
     // MARK: - Bitwise Operators
+    
+    /**
+     * All bitwise operators can be called with an argument of a `UBigNumber` and any other object conforming to the `BinaryInteger` protocol
+     */
     
     /// Stores the result of performing a bitwise OR operation on the two given
     /// values in the left-hand-side variable.
@@ -291,7 +307,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         
         let wordShift: Int = Int(rhs / 64) // words to shift by
         let bitShift:  Int = Int(rhs % 64) // bits going to be shifted
-    
+        
         // shift by the words, then by the bits
         // aka shift the array, then shift the bits by bitShift
         for i in (0..<lhs.size) {
@@ -410,6 +426,12 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     
     // MARK: Arithmetic Operators
     
+    /// Adds two ```UBigNumber```s with no overflow handling. Any numbers that would usually be carried instead
+    /// result in an overflow
+    ///
+    /// - Parameters:
+    ///   - lhs: ```UBigNumber``` to increment
+    ///   - rhs: ```UBigNumber``` to add to ```lhs```
     public static func &+= (lhs: inout UBigNumber, rhs: UBigNumber) {
         
         var carryOut: UInt64 = 0
@@ -490,7 +512,7 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     public static func -= (lhs: inout UBigNumber, rhs: UBigNumber) {
         lhs = ((UBN(~rhs) &+ 1) &+ lhs).erasingLeadingZeros
     }
-
+    
     /**
      * Multiplication Assignment operator
      *
@@ -514,6 +536,11 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         
         if rhs == 0 {
             lhs = 0
+            return
+        }
+        
+        if rhs.isPowerOfTwo {
+            lhs <<= rhs.mostSignificantBit
             return
         }
         
@@ -566,6 +593,13 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
             return
         }
         
+        // if rhs is a power of two, this process is a whole lot simpler
+        
+        if rhs.isPowerOfTwo {
+            lhs &<<= rhs.mostSignificantBit
+            return
+        }
+        
         var a = rhs
         var i = 0
         
@@ -590,64 +624,76 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     }
     
     /**
-     * No idea how this is going to work :(
+     * Divides lhs by rhs
      */
     public static func /= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        // I'm making these two different if statements so that it runs faster,
-        // and in the event of the first one being true, it doesn't have to execute the second
-        
-        if rhs == 0 {
-            fatalError("Cannot divide by 0")
-        }
+        assert(rhs != 0, "Cannot divide by 0")
+        let divisor = rhs.erasingLeadingZeros
         
         if lhs == 0 {
             return
         }
         
-        var a = rhs
+        if rhs.isPowerOfTwo {
+            lhs >>= rhs.mostSignificantBit
+            return
+        }
+        
+        var dividend = lhs
+        var q: UBN = 0 // quotient
         var i = 0
         
-        while (a[0] % 2) == 0 {
-            a >>= 1
-            i += 1
-        }
+        let dividendBitWidth = dividend.size * 64
+        let divisorBitWidth  = divisor.mostSignificantBit
+        let shiftedDivisor   = divisor << (dividendBitWidth - divisorBitWidth)
         
-        let originalLHS = lhs
-        
-        lhs >>= i
-        
-        while a != 0 {
-            
-            a >>= 1
-            i += 1
-            
-            if (a % 2) == 1 {
-                lhs += originalLHS >> i
+        while dividend >= divisor {
+            i = 0
+            while i <= (dividendBitWidth - divisorBitWidth) {
+                let positionedDivisor = shiftedDivisor >> i
+                let portionOfDividend = (dividend << i) >> (dividendBitWidth - divisorBitWidth)
+                
+                q <<= 1
+                
+                if portionOfDividend >= divisor {
+                    dividend -= positionedDivisor
+                    q += 1
+                }
+                
+                i += 1
             }
         }
+        
+        lhs = q
+        
     }
     
     public static func %= (lhs: inout UBigNumber, rhs: UBigNumber) {
         assert(rhs != 0, "Cannot divide by 0")
+        let divisor = rhs.erasingLeadingZeros
         
-        let a = lhs
-        var b = UBN(rhs).keepingLeadingZeros
-        
-        matchSizes(a: &lhs, b: &b)
-        
-        // now do the division
-        
-        for i in (0..<b.bitWidth).reversed() {
-            lhs <<= 1
-            
-            lhs |= (a & (UBigNumber(1) << i)) >> i
-            
-            if (lhs >= b) {
-                lhs -= b;
-            }
+        if lhs == 0 {
+            return
         }
         
-        lhs.setShouldEraseLeadingZeros(to: true)
+        
+        let dividendBitWidth = lhs.size * 64
+        let divisorBitWidth  = divisor.mostSignificantBit
+        let shiftedDivisor   = divisor << (dividendBitWidth - divisorBitWidth)
+        
+        while lhs >= divisor {
+            var i = 0
+            while i <= (dividendBitWidth - divisorBitWidth) {
+                let positionedDivisor = shiftedDivisor >> i
+                let portionOfDividend = (lhs << i) >> (dividendBitWidth - divisorBitWidth)
+                
+                if portionOfDividend >= divisor {
+                    lhs -= positionedDivisor
+                }
+                
+                i += 1
+            }
+        }
     }
     
     /// Adds two BigNumbers, with no overflow handling
@@ -745,6 +791,77 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
         return a
     }
     
+    // MARK: Modular Exponentiation (Non-operator definitions)
+    
+    /**
+     * Quickly computes A^B mod C
+     *
+     * - Parameters:
+     *      - a: Base
+     *      - b: Exponent
+     *      - c: Modulo
+     *
+     * - Returns: ```a ^ b mod c```
+     */
+    public static func modExp(a: UBigNumber, b: UBigNumber, c: UBigNumber) -> UBigNumber {
+        
+        if b.isPowerOfTwo {
+            return modExpPowerOfTwo(a: a, b: b, c: c)
+        }
+        
+        var i = 0
+        
+        while (b >> i) % 2 == 0 {
+            i += 1
+        }
+        
+        var p = modExpPowerOfTwo(a: a, b: 1 << i, c: c)
+        
+        i += 1
+        
+        while b >> i > 0 {
+            
+            if (b >> i) % 2 == 1 {
+                p *= modExpPowerOfTwo(a: a, b: 1 << i, c: c)
+            }
+            
+            i += 1
+        }
+        
+        return p % c
+    }
+    
+    /**
+     * Fast modular exponentiation for powers of two
+     *
+     * - Parameters:
+     *      - a: Base
+     *      - b: Exponent (Must be power of two)
+     *      - c: Modulo
+     *
+     * - Returns ```a^b mod c``` where ```b``` is a power of two
+     */
+    public static func modExpPowerOfTwo(a: UBigNumber, b: UBigNumber, c: UBigNumber) -> UBigNumber {
+        if b == 1 {
+            return a % c
+        }
+        
+//        let d = modExpPowerOfTwo(a: a, b: b >> 1, c: c) // for some reason, trying to only perform the computation once actually makes this function slower. No idea why.
+        return (modExpPowerOfTwo(a: a, b: b >> 1, c: c) * modExpPowerOfTwo(a: a, b: b >> 1, c: c)) % c
+    }
+    
+    // MARK: Modular Exponentiation (Operator Definitions)
+    
+    public static func **(base: UBigNumber, power: UBigNumber) -> (base: UBigNumber, power: UBigNumber) {
+        (base: base, power: power)
+    }
+    
+    public static func %(lhs: (base: UBigNumber, power: UBigNumber), rhs: UBigNumber) -> UBigNumber {
+        return modExp(a: lhs.base, b: lhs.power, c: rhs)
+    }
+    
+    
+    
     // MARK: Private functions
     
     /// Returns the maximum of two comparables
@@ -764,4 +881,3 @@ extension UBigNumber: BinaryInteger, Comparable, Equatable {
     }
     
 }
-

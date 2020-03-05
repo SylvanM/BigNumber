@@ -8,7 +8,7 @@
 
 import Foundation
 
-public extension String {
+internal extension String {
     
     // MARK: Subscripts
     

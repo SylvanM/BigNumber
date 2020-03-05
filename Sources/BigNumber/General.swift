@@ -13,7 +13,7 @@ import Foundation
 /// - Parameter char: ```Character``` to convert to a nibble
 ///
 /// - Returns: A ```UInt8``` representation of the char in hex
-func toNibble(_ char: Character) -> UInt8 {
+internal func toNibble(_ char: Character) -> UInt8 {
     let n = UInt64(char.asciiValue!)
     return  ((n >= 0x30) && (n <= 0x39)) ? UInt8(n - 0x30):
             ((n >= 0x41) && (n <= 0x46)) ? UInt8(n - 0x37):
@@ -27,7 +27,7 @@ func toNibble(_ char: Character) -> UInt8 {
 ///     - nibble: ```UInt64``` hex digit to be converted to a character
 ///
 /// - Returns: A ```Character``` value, the hex digit representation of the given nibble
-func toChar(_ nibble: UInt64) -> Character {
+internal func toChar(_ nibble: UInt64) -> Character {
     var c: Character
     let n = 0x0f & nibble
     
