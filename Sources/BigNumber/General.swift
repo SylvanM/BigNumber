@@ -21,13 +21,14 @@ internal func toNibble(_ char: Character) -> UInt8 {
             0x10
 }
 
+
 /// Converts a nibble to an ASCII character
 ///
 /// - Parameters:
 ///     - nibble: ```UInt64``` hex digit to be converted to a character
 ///
 /// - Returns: A ```Character``` value, the hex digit representation of the given nibble
-internal func toChar(_ nibble: UInt64) -> Character {
+internal func toChar(_ nibble: UInt) -> Character {
     var c: Character
     let n = 0x0f & nibble
     

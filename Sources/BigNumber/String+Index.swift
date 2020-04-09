@@ -14,7 +14,7 @@ internal extension String {
     
     /// References the ith character of a string
     subscript (i: Int) -> Character {
-        return self[index(startIndex, offsetBy: i)]
+        self[index(startIndex, offsetBy: i)]
     }
     
 }

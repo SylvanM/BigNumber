@@ -3,16 +3,16 @@ import XCTest
 
 final class BigNumberTests: XCTestCase {
     
-   func testExample() {
-    
-        var rand: UBN {
-            return UBN.random(bytes: 8)
-        }
-
-        for _ in 0..<128 {
-            _ = rand ** rand % rand
-        }
-    
+    func testExample() {
+        
+        let a = UBN(randomBytes: 8)
+        let b = UBN(randomBytes: 8)
+        
+        print(a)
+        print(b)
+        
+        print(a * b)
+        
     }
     
     static var allTests = [

@@ -9,6 +9,27 @@ import Foundation
 
 public extension UBigNumber {
     
+    // MARK: Modulo Methods
+    
+    /**
+     * Computes `x` such that `x * self = 1 (mod m)` or returns garbage if `x` is not relatively prime to `m`
+     *
+     * - Parameters:
+     *      - m: Modulo for the inverse modulo
+     *
+     * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
+     */
+    func invMod(_ m: UBigNumber) -> UBigNumber {
+        
+        var x: UBigNumber = 0
+        var y: UBigNumber = 0
+        
+        UBigNumber.extgcd(x: &x, y: &y, a: self, b: m)
+        
+        return x
+        
+    }
+    
     // MARK: - GCD Algorithms
     
     /**
@@ -63,8 +84,17 @@ public extension UBigNumber {
         }
         
         if a == 1 {
-            
+            x = 1
+            return
         }
+        
+        if b == 1 {
+            y = 1
+            return
+        }
+        
+        
+        
     }
     
     // MARK: Primality Tests
@@ -111,10 +141,10 @@ public extension UBigNumber {
         
         for _ in 0..<128 {
             
-            var rand = UBN.random(bytes: self.array.count * 8)
+            var rand = UBN(randomBytes: sizeInBytes)
             
             while rand == self {
-                rand = UBN.random(bytes: self.array.count * 8)
+                rand = UBN(randomBytes: sizeInBytes)
             }
             
             if rand ** (self - 1) % self != 1 {
@@ -144,15 +174,15 @@ public extension UBigNumber {
      *         1024    30 min
      *
      * - Parameters:
-     *      - words: `Int` representing number of bytes for this new prime `UBN`
+     *      - bytes: `Int` representing number of bytes for this new prime `UBN`
      *
      * - Returns: Probable prime with `bytes` bytes
      */
     static func generateProbablePrime(bytes: Int) -> UBigNumber {
         
-        var prime = UBN.random(bytes: bytes)
+        var prime = UBN(randomBytes: bytes)
         while (!prime.isProbablePrime()) {
-            prime = UBN.random(bytes: bytes)
+            prime = UBN(randomBytes: bytes)
         }
         return prime
     }
