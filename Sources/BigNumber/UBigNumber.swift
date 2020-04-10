@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import CryptoSwift
 
 /// An unsigned ```UBigNumber``` object
 public typealias UBN = UBigNumber
@@ -439,6 +440,24 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         
         _ = SecRandomCopyBytes(generator, randomBytes, &self.words)
     
+    }
+    
+    /**
+     * Creates a `UBigNumber` object from the underlying bytes of a given `Data` object
+     *
+     * - Parameters:
+     *      - data: `Data` to convert to a `UBigNumber`
+     */
+    init(data: Data) {
+        
+        let rawData = Array(data)
+        
+        self.words = rawData.withUnsafeBytes {
+            $0.bindMemory(to: UInt.self)
+        }.map {
+            $0.littleEndian
+        }
+        
     }
     
     // MARK: - Methods

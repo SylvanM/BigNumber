@@ -330,31 +330,8 @@ extension UBigNumber: Comparable, Equatable {
     }
     
     public static func %= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        assert(rhs != 0, "Cannot divide by 0")
-        let divisor = rhs.normalized
-        
-        if lhs == 0 {
-            return
-        }
-        
-        
-        let dividendBitWidth = lhs.size * 64
-        let divisorBitWidth  = divisor.mostSignificantBitIndex
-        let shiftedDivisor   = divisor << (dividendBitWidth - divisorBitWidth)
-        
-        while lhs >= divisor {
-            var i = 0
-            while i <= (dividendBitWidth - divisorBitWidth) {
-                let positionedDivisor = shiftedDivisor >> i
-                let portionOfDividend = (lhs << i) >> (dividendBitWidth - divisorBitWidth)
-                
-                if portionOfDividend >= divisor {
-                    lhs -= positionedDivisor
-                }
-                
-                i += 1
-            }
-        }
+        var q = UBN()
+        divide(dividend: lhs, divisor: rhs, quotient: &q, remainder: &lhs)
     }
     
     // MARK: Non-Assignment Arithmetic Operators
