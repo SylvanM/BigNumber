@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import CryptoSwift
 
 /// An unsigned ```UBigNumber``` object
 public typealias UBN = UBigNumber
