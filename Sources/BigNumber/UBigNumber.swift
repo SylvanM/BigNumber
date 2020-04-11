@@ -360,7 +360,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     /// - Parameters:
     ///     - array: The array object
     ///     - bigEndian: `true` if the input array is in the Big Endian format. The default is `false`
-    init <T: BinaryInteger>(_ array: [T], bigEndian: Bool = false) {
+    public init <T: BinaryInteger>(_ array: [T], bigEndian: Bool = false) {
         
         // A nice fellow on stackoverflow helped me with this after I asked how to do C-style array/pointer casting
         // in Swift. It was one of the only wholesome experiences I've ever had on stack overflow. Every other time, I've
@@ -416,7 +416,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///
     /// - Parameters:
     ///     - integer: ```Int``` to be converted to a ```UBN```
-    init(_ integer: Int) {
+    public init(_ integer: Int) {
         self.words = [UInt(integer)]
     }
     
@@ -429,7 +429,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///     - generator: Generator to use (degault is ```kSecRandomDefault```)
     ///
     /// - Returns: Random ```UBN```
-    init(randomBytes: Int, fixedSize: Bool = false, generator: SecRandomRef? = kSecRandomDefault) {
+    public init(randomBytes: Int, generator: SecRandomRef? = kSecRandomDefault) {
         
         // simplify this dude
         let arraySize = randomBytes / UInt.size + ( randomBytes % UInt.size > 0 ? 1 : 0 )
@@ -447,7 +447,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
      * - Parameters:
      *      - data: `Data` to convert to a `UBigNumber`
      */
-    init(data: Data) {
+    public init(data: Data) {
         
         let rawData = Array(data)
         
