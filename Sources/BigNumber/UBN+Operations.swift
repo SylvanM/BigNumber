@@ -313,6 +313,10 @@ public extension UBigNumber {
         
         let cmp = a.compare(to: b)
         
+        if divisor == 0 {
+            fatalError("Cannot divide by 0")
+        }
+        
         if cmp == -1 {
             return
         }
