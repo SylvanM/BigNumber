@@ -202,35 +202,25 @@ public extension UBigNumber {
      *
      * - Returns: Sum of `self` and `other`
      */
-    @discardableResult mutating func add <T: BinaryInteger> (_ other: T, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
+    @discardableResult mutating func add (_ b: UBigNumber, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
         
-        let b = UBN(other)
+        //let b = UBN(other)
         
-        var carryIn:  UInt64 = 0
-        var carryOut: UInt64 = 0
+        var carry: UInt
         
-        let size = handleOverflow ? b.words.count + 1 : self.size
+        let size = handleOverflow ? Swift.max(self.size, b.size) + 1 : self.size
         
         if size > self.size {
             self.words += Words(repeating: 0, count: size - self.size)
         }
         
+        carry = 0
+        
         for i in 0..<size {
+            self[i] &+= carry
+            carry = self[i] < carry ? 1 : 0
             self[i] &+= b[safe: i]
-            
-            if self[i] == 0 {
-                carryOut = 1
-            }
-            
-            if carryIn != 0 {
-                self[i] &+= 1
-                if self[i] == 0 {
-                    carryOut = 1
-                }
-            }
-            
-            carryIn = carryOut
-            carryOut = 0
+            carry = self[i] < b[safe: i] ? 1 : carry
         }
         
         return self.normalize()
@@ -241,7 +231,12 @@ public extension UBigNumber {
     /// - Parameter other: `BinaryInteger` to subtract
     /// - Returns: difference of `self` and `other`
     @discardableResult mutating func subtract <T: BinaryInteger> (_ other: T) -> UBigNumber {
-        let b = UBN(other)
+        var b = UBN(other)
+        
+        if b.size < self.size {
+            b.words += Words(repeating: 0, count: self.size - b.size)
+        }
+        
         self.add(b.twosCompliment, withOverflowHandling: false)
         return self.normalize()
     }
@@ -361,6 +356,10 @@ public extension UBigNumber {
                     partialQuotient[0] &-= 1
                     partialProduct.subtract(b)
                 }
+                
+                print(partialProduct)
+                print(remainder)
+                print()
                 
             }
             
