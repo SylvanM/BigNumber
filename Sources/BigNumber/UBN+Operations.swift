@@ -204,8 +204,6 @@ public extension UBigNumber {
      */
     @discardableResult mutating func add (_ b: UBigNumber, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
         
-        //let b = UBN(other)
-        
         var carry: UInt
         
         let size = handleOverflow ? Swift.max(self.size, b.size) + 1 : self.size
