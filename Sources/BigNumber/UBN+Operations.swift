@@ -358,7 +358,7 @@ public extension UBigNumber {
                     partialQuotient.rightShift(by: 1)
                 }
                 else {
-                    partialQuotient[0] -= 1
+                    partialQuotient[0] &-= 1
                     partialProduct.subtract(b)
                 }
                 
