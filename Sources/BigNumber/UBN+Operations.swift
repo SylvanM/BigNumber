@@ -379,7 +379,7 @@ public extension UBigNumber {
      * - Returns: The binary logarithm of `a`
      */
     static func log(_ a: UBigNumber) -> UBigNumber {
-        a.mostSignificantBitIndex
+        UBigNumber(a.mostSignificantBitIndex)
     }
     
 }
