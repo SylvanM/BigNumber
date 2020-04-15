@@ -355,6 +355,16 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         
     }
     
+    /**
+     * Creates a `UBN` with an empty array
+     *
+     * - Parameters:
+     *      - size: Number of words in this new `UBN`
+     */
+    public init(size: Int) {
+        self.words = Words(repeating: 0, count: size)
+    }
+    
     /// Creates a `UBN` from an array object representing a number with element type `BinaryInteger`.
     ///
     /// - Parameters:

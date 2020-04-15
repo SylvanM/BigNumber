@@ -5,11 +5,17 @@ final class BigNumberTests: XCTestCase {
     
     func testExample() {
         
-        var a: UBN = [UInt.max, UInt.max, UInt.max, UInt.max]
-        let b: UBN = [18446744073709551615, 0, 0, 0]
-        print(b.twosCompliment)
-        a.add(1, withOverflowHandling: false)
-        print(a)
+        var a = UBN(size: 8)
+        var b = UBN(size: 8)
+        var r: UBN = 0
+        
+        for _ in 0..<2048 {
+            a.setToRandom()
+            b.setToRandom()
+            
+            UBN.multiply(x: a, by: b, result: &r)
+            print(r)
+        }
         
     }
     
