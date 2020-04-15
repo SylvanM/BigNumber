@@ -368,4 +368,18 @@ public extension UBigNumber {
         
     }
     
+    // MARK: - Logarithmic Operations
+    
+    /**
+     * The Binary Logarithm
+     *
+     * - Parameters:
+     *      - a: `UBigNumber` of which to computer the binary logarithm
+     *
+     * - Returns: The binary logarithm of `a`
+     */
+    static func log(_ a: UBigNumber) -> UBigNumber {
+        a.mostSignificantBitIndex
+    }
+    
 }

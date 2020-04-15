@@ -521,13 +521,13 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     // MARK: - Subscripts
     
     /// References the word at the given index
-    subscript (index: Int) -> UInt {
+    public subscript (index: Int) -> UInt {
         get { words[index] }
         set { words[index] = newValue }
     }
     
     /// References the array value at the given index. If the index does not exist, it creates it or returns 0.
-    subscript (safe index: Int) -> UInt {
+    public subscript (safe index: Int) -> UInt {
         get { words.count > index ? words[index] : 0 }
         set {
             // make sure the index is an actual value of the array
@@ -541,7 +541,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     }
     
     /// References a bit with a specified index
-    subscript (bit index: Int) -> Words.Element {
+    public subscript (bit index: Int) -> Words.Element {
         get {
             // if the referenced bit is not actually in the array, just return 0
             (size * UInt.bitSize) - 1 > abs(index) ? (self >> index & UBN(1))[0] : 0
