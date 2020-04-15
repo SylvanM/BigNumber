@@ -359,10 +359,6 @@ public extension UBigNumber {
                     partialProduct.subtract(b)
                 }
                 
-                print(partialProduct)
-                print(remainder)
-                print()
-                
             }
             
             remainder.subtract(partialProduct)

@@ -31,13 +31,13 @@ public extension UInt {
         (lo, overflow) = lo.addingReportingOverflow(c)
         
         if overflow {
-            hi += 1
+            hi &+= 1
         }
         
         (lo, overflow) = lo.addingReportingOverflow(d)
         
         if overflow {
-            hi += 1
+            hi &+= 1
         }
         
     }
