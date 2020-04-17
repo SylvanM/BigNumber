@@ -75,10 +75,47 @@ public extension UBigNumber {
      *      - other: another `UBigNumber` to OR with this one
      */
     @discardableResult mutating func or <T: BinaryInteger> (with other: T) -> UBigNumber {
-        let size = self.words.count > other.words.count ? self.words.count : other.words.count
         
-        for i in 0..<size {
-            self.words[i] |= other.words[i]
+        // I feel like there should be a much simpler and prettier way of doing this, but
+        // I need to make sure I don't run into any index out of range errors
+        
+        var i = 0
+        var otherIsSmaller: Bool = true
+        
+        // I'm storing the other to a variable because using the .words property and subscript calls a getter method
+        // and I don't want to have to waste time calling that every single time
+        let otherWords = Words(other.words)
+        
+        let minSize: Int = {
+            if self.size <= other.words.count {
+                otherIsSmaller = false
+                return self.size
+            }
+            
+            return other.words.count
+        }()
+        
+        while i < minSize {
+            
+            self[i] |= otherWords[i]
+            
+            i += 1
+        }
+        
+        if otherIsSmaller {
+            while i < self.size {
+                self[i] |= 0x0 // the hex isn't necessary but it looks cool
+                i += 1
+            }
+            return self
+        }
+        
+        // gotta allocate new space
+        
+        self.words += Words(repeating: 0, count: otherWords.count - self.size)
+        
+        while i < self.size {
+            self[i] |= otherWords[i]
         }
         
         return self
@@ -91,10 +128,46 @@ public extension UBigNumber {
      *      - other: another `UBigNumber` to AND with this one
      */
     @discardableResult mutating func and <T: BinaryInteger> (with other: T) -> UBigNumber {
-        let size = self.words.count > other.words.count ? self.words.count : other.words.count
+        // I feel like there should be a much simpler and prettier way of doing this, but
+        // I need to make sure I don't run into any index out of range errors
         
-        for i in 0..<size {
-            self.words[i] &= other.words[i]
+        var i = 0
+        var otherIsSmaller: Bool = true
+        
+        // I'm storing the other to a variable because using the .words property and subscript calls a getter method
+        // and I don't want to have to waste time calling that every single time
+        let otherWords = Words(other.words)
+        
+        let minSize: Int = {
+            if self.size <= other.words.count {
+                otherIsSmaller = false
+                return self.size
+            }
+            
+            return other.words.count
+        }()
+        
+        while i < minSize {
+            
+            self[i] &= otherWords[i]
+            
+            i += 1
+        }
+        
+        if otherIsSmaller {
+            while i < self.size {
+                self[i] &= 0x0 // the hex isn't necessary but it looks cool
+                i += 1
+            }
+            return self
+        }
+        
+        // gotta allocate new space
+        
+        self.words += Words(repeating: 0, count: otherWords.count - self.size)
+        
+        while i < self.size {
+            self[i] &= otherWords[i]
         }
         
         return self
@@ -107,10 +180,46 @@ public extension UBigNumber {
      *      - other: another `UBigNumber` to XOR with this one
      */
     @discardableResult mutating func xor <T: BinaryInteger> (with other: T) -> UBigNumber {
-        let size = self.words.count > other.words.count ? self.words.count : other.words.count
+        // I feel like there should be a much simpler and prettier way of doing this, but
+        // I need to make sure I don't run into any index out of range errors
         
-        for i in 0..<size {
-            self.words[i] ^= other.words[i]
+        var i = 0
+        var otherIsSmaller: Bool = true
+        
+        // I'm storing the other to a variable because using the .words property and subscript calls a getter method
+        // and I don't want to have to waste time calling that every single time
+        let otherWords = Words(other.words)
+        
+        let minSize: Int = {
+            if self.size <= other.words.count {
+                otherIsSmaller = false
+                return self.size
+            }
+            
+            return other.words.count
+        }()
+        
+        while i < minSize {
+            
+            self[i] &= otherWords[i]
+            
+            i += 1
+        }
+        
+        if otherIsSmaller {
+            while i < self.size {
+                self[i] &= 0x0 // the hex isn't necessary but it looks cool
+                i += 1
+            }
+            return self
+        }
+        
+        // gotta allocate new space
+        
+        self.words += Words(repeating: 0, count: otherWords.count - self.size)
+        
+        while i < self.size {
+            self[i] &= otherWords[i]
         }
         
         return self

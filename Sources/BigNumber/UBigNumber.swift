@@ -543,8 +543,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     /// References a bit with a specified index
     public subscript (bit index: Int) -> Words.Element {
         get {
-            // if the referenced bit is not actually in the array, just return 0
-            (size * UInt.bitSize) - 1 > abs(index) ? (self >> index & UBN(1))[0] : 0
+            self & ( 1 << index ) != 0 ? 1 : 0
         }
         set {
             
