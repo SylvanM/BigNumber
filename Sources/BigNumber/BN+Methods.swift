@@ -2,12 +2,22 @@
 //  File.swift
 //  
 //
-//  Created by Sylvan Martin on 2/20/20.
+//  Created by Sylvan Martin on 5/7/20.
 //
 
 import Foundation
 
-public extension UBigNumber {
+public extension BigNumber {
+    
+    // MARK: Sign Methods
+    
+    func signum() -> BigNumber {
+        BigNumber(self.sign)
+    }
+    
+    mutating func negate() {
+        self.sign = -self.sign
+    }
     
     // MARK: Modulo Methods
     
@@ -19,12 +29,12 @@ public extension UBigNumber {
      *
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
-    func invMod(_ m: UBigNumber) -> UBigNumber {
+    func invMod(_ m: BigNumber) -> BigNumber {
         
-        var x: UBigNumber = 0
-        var y: UBigNumber = 0
+        var x: BigNumber = 0
+        var y: BigNumber = 0
         
-        UBigNumber.extgcd(x: &x, y: &y, a: self, b: m)
+        BigNumber.extgcd(x: &x, y: &y, a: self, b: m)
         
         return x
         
@@ -43,7 +53,7 @@ public extension UBigNumber {
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modExp(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
+    static func modExp(a: BigNumber, b: BigNumber, m: BigNumber) -> BigNumber {
         
         // in your code this is an instance method.
         // Is it any better to have it an instance method rather than a static method?
@@ -51,13 +61,13 @@ public extension UBigNumber {
         // also, is it any faster to have a separate method for powers of 2?
         
         let bitSize = b.bitWidth
-        var t: UBN = a
-        var x: UBN = 1
+        var t: BN = a
+        var x: BN = 1
         
-        if invPower {
+        if m.sign == -1 {
             t = a.invMod(m)
         }
-        
+        #warning("Check this")
         for i in (1...bitSize).reversed() {
             x = (x * x) % m
             if b[bit: i-1] == 1 {
@@ -72,14 +82,16 @@ public extension UBigNumber {
     // MARK: - GCD Algorithms
     
     /**
-     * Returns the greatest common denominator of two `UBigNumber`s including this one
+     * Returns the greatest common denominator of two `BigNumber`s including this one
      *
      * - Parameters:
      *      - b: Another `UBN`
      *
      * - Returns: `gcd(self, b)`
      */
-    func gcd(_ b: UBigNumber) -> UBigNumber {
+    func gcd(_ b: BigNumber) -> BigNumber {
+        
+        #warning("Adapt this for signed stuff")
         
         if self == 0 {
             if b == 0 {
@@ -107,13 +119,15 @@ public extension UBigNumber {
      *
      * `ax + by = gcd(a, b)`
      */
-    static func extgcd(x: inout UBigNumber, y: inout UBigNumber, a: UBigNumber, b: UBigNumber) {
+    static func extgcd(x: inout BigNumber, y: inout BigNumber, a: BigNumber, b: BigNumber) {
         
-        var q = UBN()
-        var r = UBN()
+        #warning("Adapt this for signed stuff")
         
-        var xp = UBN()
-        var yp = UBN()
+        var q = BN()
+        var r = BN()
+        
+        var xp = BN()
+        var yp = BN()
         
         if a == 0 {
             if b == 0 {
@@ -168,6 +182,11 @@ public extension UBigNumber {
      */
     func isProbablePrime() -> Bool {
         
+        if self <= 1 {
+            // Part of the definition of a prime is that it is greater than 1
+            return false
+        }
+        
         var rand = self
         
         if self == 1 {
@@ -175,11 +194,11 @@ public extension UBigNumber {
         }
         
         // Quick check to make sure this number isn't divisible by any of the usual suspects
-        let smallPrimes: [UBN] = [
+        let smallPrimes: [BN] = [
             2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31
         ]
         
-        var m: UBN = 1
+        var m: BN = 1
         
         for prime in smallPrimes {
             if self == prime {
@@ -197,10 +216,10 @@ public extension UBigNumber {
             rand.setToRandom()
             
             while rand == self {
-                rand = UBN(randomBytes: sizeInBytes)
+                rand = BN(randomBytes: sizeInBytes)
             }
             
-            if UBN.modExp(a: rand, b: rand-1, m: self) != 1{
+            if BN.modExp(a: rand, b: rand-1, m: self) != 1{
                 return false
             }
             
@@ -231,13 +250,13 @@ public extension UBigNumber {
      *
      * - Returns: Probable prime with `bytes` bytes
      */
-    static func generateProbablePrime(bytes: Int) -> UBigNumber {
+    static func generateProbablePrime(bytes: Int) -> BigNumber {
         
         var prime = UBN(randomBytes: bytes)
         while (!prime.isProbablePrime()) {
             prime = UBN(randomBytes: bytes)
         }
-        return prime
+        return BN(prime)
     }
     
 }

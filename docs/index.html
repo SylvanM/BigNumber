@@ -13,7 +13,7 @@
     <a title="  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html"> Docs</a> (96% documented)</p>
+        <p><a href="index.html"> Docs</a> (99% documented)</p>
       </div>
     </header>
     <div class="content-wrapper">
@@ -27,16 +27,11 @@
       <nav class="sidebar">
         <ul class="nav-groups">
           <li class="nav-group-name">
-            <a href="Extensions.html">Extensions</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a href="Extensions/String.html">String</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
             <a href="Structs.html">Structures</a>
             <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Structs/BigNumber.html">BigNumber</a>
+              </li>
               <li class="nav-group-task">
                 <a href="Structs/UBigNumber.html">UBigNumber</a>
               </li>
@@ -45,6 +40,9 @@
           <li class="nav-group-name">
             <a href="Typealiases.html">Type Aliases</a>
             <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:9BigNumber2BNa">BN</a>
+              </li>
               <li class="nav-group-task">
                 <a href="Typealiases.html#/s:9BigNumber3UBNa">UBN</a>
               </li>
@@ -60,19 +58,46 @@
 
 <p>Pure-Swift implementation of a BigNumber library!</p>
 
-<p>This package adds the <code>BigNumber</code> structure, which is an array representation of an unsigned integer.</p>
-
-<p>Swift arrays have dynamically-allocated memory, meaning that an object of type <code>BigNumber</code> can represent an unsigned integer of unlimited size
-(although of course larger numbers will have a greater performance impact).</p>
+<p>This package adds the <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> and <code><a href="Structs/BigNumber.html">BigNumber</a></code> structures, as unsigned and signed integer types (respectively) with unlimited size. (maybe that&rsquo;s a bit
+optimistic, their real size is just however much RAM you&rsquo;re willing to give them)</p>
 <h2 id='how-it-works' class='heading'>How it works</h2>
+<h3 id='the-code-ubignumber-code-type' class='heading'>The <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> type</h3>
 
-<p>A <code>BigNumber</code> object (which will be known from now on as its typealias, <code>BN</code>) is represented using the <a href="https://en.wikipedia.org/wiki/Endianness">Little-Endian</a> 
-format.</p>
+<p>A <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> object is a structure whose only stored properties are an array of unsigned 64 bit integers and a boolean which
+tells the <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> whether or not it should automatically cleanse itslelf of extraneous leading zeros in order to save memory space.
+This boolean is toggled internally and should not be manually changed.</p>
+
+<p>The <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> type is in the Little-Endian format, with 64-bit words. For example, the <code><a href="Structs/UBigNumber.html">UBigNumber</a></code> representing 
+<code>0xDF72EF369932A988091B380F066CB5A3</code> would be <code>[656179807895991715, 16101194635580451208]</code>.</p>
+<h3 id='the-code-bignumber-code-type' class='heading'>The <code><a href="Structs/BigNumber.html">BigNumber</a></code> type</h3>
+
+<p>The <code><a href="Structs/BigNumber.html">BigNumber</a></code> type is just the signed version of a <code><a href="Structs/UBigNumber.html">UBigNumber</a></code>, with a <code>sign</code> property of type <code>Int</code> as well as a <code>magnitude</code> of
+type <code><a href="Structs/UBigNumber.html">UBigNumber</a></code>.</p>
+<h2 id='quick-start' class='heading'>Quick start</h2>
+
+<p>BigNumbers (signed and unsigned) can be initilized with integer literals just as you would initialize any other integer type but you
+must specify that it is a BigNumber.</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">UBigNumber</span> <span class="o">=</span> <span class="mh">0xD5C4E761D36CA206</span> <span class="c1">// creates unsigned BigNumber with a value of 15,403,691,032,858,894,854</span>
+<span class="k">let</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">UBigNumber</span> <span class="o">=</span> <span class="mi">42</span> <span class="c1">// creates unsigned BigNmber with a value of 42</span>
+<span class="k">let</span> <span class="nv">c</span><span class="p">:</span> <span class="kt">BigNumer</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32</span> <span class="c1">// creates a signed BigNymber with a value of -32</span>
+</code></pre>
+
+<p>Because standard integer literals are not large enough to represent the kind of numbers a BigNumber is meant to hold, the type
+can also be initialized with a hex string literal. <strong>Note: This only works with hexadecimal strings</strong></p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">UBN</span> <span class="o">=</span> <span class="s">"0x688375cdfde058451210410aad6f1739"</span>
+<span class="k">let</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">UBN</span> <span class="o">=</span> <span class="s">"c1f1295b15e46418d0121eb1abba6c4f"</span> <span class="c1">// the '0x' is optional in the string, either way will work</span>
+</code></pre>
+
+<p>They can also be initialized with an array literal of the array it will contain.</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">a</span><span class="p">:</span> <span class="kt">UBN</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="c1">// creates an unsigned BigNumber with a value of 0x10000000000000000</span>
+</code></pre>
+
+<p><strong>Note: Initializing a <code><a href="Structs/BigNumber.html">BigNumber</a></code> (signed version) with a non-signed specific literal type (array, string) will result in a <code><a href="Structs/BigNumber.html">BigNumber</a></code> that is positive.</strong></p>
 
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2019-11-30)</p>
+          <p>&copy; 2020 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2020-01-05)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
         </section>
       </article>

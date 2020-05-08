@@ -22,13 +22,13 @@ extension UBigNumber: Comparable, Equatable {
     
     // MARK: - Comparative Operators
     
-    /// Compares two BigNumbers, returns true if they are equal
+    /// Compares two `UBigNumbers`, returns true if they are equal
     ///
     /// - Parameters:
-    ///     - lhs: BigNumber to compare
-    ///     - rhs: Another BigNumber to compare
+    ///     - lhs: `UBigNumber` to compare
+    ///     - rhs: Another `UBigNumber` to compare
     ///
-    /// - Returns: True if they are equal, false if not
+    /// - Returns: `true` if `lhs` and `rhs` are numerically equivalent, `false` if not.
     public static func == (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         lhs.equals(rhs)
     }
@@ -50,7 +50,7 @@ extension UBigNumber: Comparable, Equatable {
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: True if lhs > rpublic hs
+    /// - Returns: True if lhs > rhs
     public static func > (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
         lhs.compare(to: rhs) > 0
     }
@@ -72,9 +72,9 @@ extension UBigNumber: Comparable, Equatable {
     ///     - lhs: BigNumber
     ///     - rhs: BigNumber
     ///
-    /// - Returns: Trpublic ue if lhs >= rhs
+    /// - Returns: True if lhs >= rhs
     public static func >= (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
-        return lhs > rhs || lhs == rhs
+        lhs.compare(to: rhs) >= 0
     }
     
     /// Less than or Equal to Operator
@@ -85,7 +85,7 @@ extension UBigNumber: Comparable, Equatable {
     ///
     /// - Returns: True if `lhs` is less than or equal to
     public static func <= (lhs: UBigNumber, rhs: UBigNumber) -> Bool {
-        return lhs < rhs || lhs == rhs
+        lhs.compare(to: rhs) <= 0
     }
     
     // MARK: - Range Operators
@@ -93,10 +93,10 @@ extension UBigNumber: Comparable, Equatable {
     /// Returns a range of all values between two values, inclusive
     ///
     /// - Parameters:
-    ///     - a: Lower bound
-    ///     - b: Upper bound
+    ///     - lhs: Lower bound
+    ///     - rhs: Upper bound
     ///
-    /// - Returns: An range of all values between ```a``` and ```b```, inclusive
+    /// - Returns: An range of all values between ```lhs``` and ```rhs```, inclusive
     public static func ... <RHS: BinaryInteger>(lhs: UBigNumber, rhs: RHS) -> ClosedRange<UBigNumber> {
         ClosedRange<UBigNumber>(uncheckedBounds: (lower: lhs, upper: UBN(rhs)))
     }
@@ -151,8 +151,8 @@ extension UBigNumber: Comparable, Equatable {
     /// Left bitshifts a value by another, and stores the result in the left hand side variable, with no overflow handling
     ///
     /// - Parameters:
-    ///     - a: value to left bitshift
-    ///     - b: amoutnt by which to left bitshift
+    ///     - lhs: value to left bitshift
+    ///     - rhs: amoutnt by which to left bitshift
     public static func &<<= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
         lhs.leftShift(by: rhs, withOverflowHandling: false)
     }
@@ -179,22 +179,22 @@ extension UBigNumber: Comparable, Equatable {
     /// One's compliment
     ///
     /// - Parameters:
-    ///     - rhs: The BigNumber to get the compliment of
+    ///     - ubn: The `UBigNumber` to get the compliment of
     ///
-    /// - Returns: The binary compliment of the BigNumber
-    public static prefix func ~ (rhs: UBigNumber) -> UBigNumber {
-        UBigNumber( rhs.words.map { ~($0) } )
+    /// - Returns: The binary compliment of `ubn`
+    public static prefix func ~ (ubn: UBigNumber) -> UBigNumber {
+        ubn.binaryCompliment
     }
     
     /// Bitwise OR operator
     ///
-    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise OR operation, returning the resulting BigNumber
+    /// Casts the smaller `UBigNumber` to a `UBigNumber` of the same size as the larger, and performs the bitwise `OR` operation, returning the resulting `UBigNumber`
     ///
     /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber
+    ///     - lhs: `UBigNumber` to `OR`
+    ///     - rhs: `UBigNumber` to `OR`
     ///
-    /// - Returns: Bitwise OR of the two BigNumbers
+    /// - Returns: Bitwise `OR` of the two `UBigNumbers`
     public static func | <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
         var a = lhs
         return a.or(with: rhs)
@@ -231,11 +231,11 @@ extension UBigNumber: Comparable, Equatable {
     /// Left bitshifts the given BigNumber by a given integer amount, with no overflow handling
     ///
     /// - Parameters:
-    ///     - lhs: BigNumber to bitshift
+    ///     - lhs: `UBigNumber` to bitshift
     ///     - rhs: Amount to bit shift
     ///
     /// - Returns: Exactly what you would expect
-    static func &<< <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
+    public static func &<< <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
         var a = lhs
         return a.leftShift(by: rhs, withOverflowHandling: false)
     }
@@ -314,7 +314,7 @@ extension UBigNumber: Comparable, Equatable {
      *      - rhs: multiplier
      */
     public static func *= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        UBigNumber.multiply(x: lhs, by: rhs, result: &lhs)
+        multiply(x: lhs, by: rhs, result: &lhs)
     }
     
     /**
@@ -341,8 +341,8 @@ extension UBigNumber: Comparable, Equatable {
     /// This won't add any elements to the BigNumber array
     ///
     /// - Parameters:
-    ///     - lhs: BigNumber
-    ///     - rhs: BigNumber
+    ///     - lhs: `UBigNumber`
+    ///     - rhs: `UBigNumber`
     ///
     /// - Returns: Sum of lhs and rhs without overflow prevention
     public static func &+ (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
@@ -389,7 +389,7 @@ extension UBigNumber: Comparable, Equatable {
         return p
     }
     
-    /// Multiplies two BigNumbers with no overflow handling
+    /// Multiplies two `UBigNumber`s with no overflow handling
     ///
     /// - Parameters:
     ///     - lhs: A BigNumber to multiply
@@ -428,65 +428,6 @@ extension UBigNumber: Comparable, Equatable {
         return a
     }
     
-    // MARK: Modular Exponentiation (Non-operator definitions)
-    
-    /**
-     * Quickly computes A^B mod C
-     *
-     * - Parameters:
-     *      - a: Base
-     *      - b: Exponent
-     *      - c: Modulo
-     *
-     * - Returns: ```a ^ b mod c```
-     */
-    public static func modExp(a: UBigNumber, b: UBigNumber, c: UBigNumber) -> UBigNumber {
-        
-        if b.isPowerOfTwo {
-            return modExpPowerOfTwo(a: a, b: b, c: c)
-        }
-        
-        var i = 0
-        
-        while (b >> i) % 2 == 0 {
-            i += 1
-        }
-        
-        var p = modExpPowerOfTwo(a: a, b: 1 << i, c: c)
-        
-        i += 1
-        
-        while b >> i > 0 {
-            
-            if (b >> i) % 2 == 1 {
-                p *= modExpPowerOfTwo(a: a, b: 1 << i, c: c)
-            }
-            
-            i += 1
-        }
-        
-        return p % c
-    }
-    
-    /**
-     * Fast modular exponentiation for powers of two
-     *
-     * - Parameters:
-     *      - a: Base
-     *      - b: Exponent (Must be power of two)
-     *      - c: Modulo
-     *
-     * - Returns ```a^b mod c``` where ```b``` is a power of two
-     */
-    public static func modExpPowerOfTwo(a: UBigNumber, b: UBigNumber, c: UBigNumber) -> UBigNumber {
-        if b == 1 {
-            return a % c
-        }
-        
-//        let d = modExpPowerOfTwo(a: a, b: b >> 1, c: c) // for some reason, trying to only perform the computation once actually makes this function slower. No idea why.
-        return (modExpPowerOfTwo(a: a, b: b >> 1, c: c) * modExpPowerOfTwo(a: a, b: b >> 1, c: c)) % c
-    }
-    
     // MARK: Modular Exponentiation (Operator Definitions)
     
     public static func **(base: UBigNumber, power: UBigNumber) -> (base: UBigNumber, power: UBigNumber) {
@@ -494,7 +435,7 @@ extension UBigNumber: Comparable, Equatable {
     }
     
     public static func %(lhs: (base: UBigNumber, power: UBigNumber), rhs: UBigNumber) -> UBigNumber {
-        return modExp(a: lhs.base, b: lhs.power, c: rhs)
+        return modExp(a: lhs.base, b: lhs.power, m: rhs)
     }
     
     // MARK: Private functions

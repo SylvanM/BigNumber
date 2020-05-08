@@ -25,18 +25,22 @@ public extension UInt {
      * This calls compiler intrinsic commands which just call processor instructions or whatever
      */
     static func addmul(lo: inout UInt, hi: inout UInt, a: UInt, b: UInt, c: UInt, d: UInt) {
-        var overflow: Bool
         
-        (lo, hi) = a.multipliedFullWidth(by: b)
-        (lo, overflow) = lo.addingReportingOverflow(c)
+        (hi, lo) = a.multipliedFullWidth(by: b)
         
-        if overflow {
+        // now do addition
+        
+        var add = lo.addingReportingOverflow(c)
+        lo = add.partialValue
+        
+        if add.overflow {
             hi &+= 1
         }
         
-        (lo, overflow) = lo.addingReportingOverflow(d)
+        add = lo.addingReportingOverflow(d)
+        lo = add.partialValue
         
-        if overflow {
+        if add.overflow {
             hi &+= 1
         }
         

@@ -1,0 +1,19 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/sylvanm/Programming/Swift/Packages/BigNumber/Sources/BigNumber/UBigNumber.swift",
+      "line": 34,
+      "symbol": "UBigNumber.erasingLeadingZeros",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/sylvanm/Programming/Swift/Packages/BigNumber/Sources/BigNumber/UBigNumber.swift",
+      "line": 40,
+      "symbol": "UBigNumber.keepingLeadingZeros",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/sylvanm/Programming/Swift/Packages/BigNumber"
+}

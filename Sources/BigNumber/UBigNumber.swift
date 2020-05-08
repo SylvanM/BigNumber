@@ -36,6 +36,12 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         self != 0 && (self & (self - 1) == 0)
     }
     
+    /// Whether or not this number represents 0
+    #warning("make this match dad's code")
+    public var isZero: Bool {
+        self.words.allSatisfy { $0 == 0 } // this is a cool swift feature I just discovered when the syntax was auto completing!
+    }
+    
     /// Words of the UBigNumber in the form of the word size on the machine
     public var words: UBigNumber.Words = [0]
     
@@ -44,25 +50,22 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         words.count
     }
     
-    /// The size of the integer represented by the ```BN```, in bytes
+    /// The size of the integer represented by the ```UBN```, in bytes
     public var sizeInBytes: Int {
-        MemoryLayout.size(ofValue: self)
+        size * MemoryLayout<UInt>.size
     }
     
     /// Size of the integer represented by the ```BN``` in bits
+    #warning("Possibly rewrite this to match dad's code")
     public var bitWidth: Int {
-        sizeInBytes * 8
+        let norm = normalized
+        let otherWordsBitWidth = (norm.size - 1) * 64
+        return otherWordsBitWidth + Int(log2(Double(norm.mostSignificantWord))) + 1
     }
     
     /// The binary compliment of this `UBN`
     public var binaryCompliment: UBigNumber {
         UBigNumber( words.map { ~$0 } )
-    }
-    
-    /// The two's compliment of this `UBN`
-    public var twosCompliment: UBigNumber {
-        var comp = binaryCompliment
-        return comp.add(1, withOverflowHandling: false)
     }
     
     /// Amount of leading zero bits
@@ -110,7 +113,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         return string
     }
     
-    /// Binary string representation of thew ```BN```
+    /// Binary string representation of this ```UBN```
     ///
     /// Leading zeros are not omitted
     public var binaryString: String {
@@ -121,24 +124,13 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         return string
     }
     
-    /// Hex string representation of the ```BN```, with every 2 digits separated by a space
-    public var formattedHexString: String {
-        var string = hexString
-        for i in (0..<hexString.count).reversed() {
-            if (string.count - i) % 2 == 0 {
-                string.insert(" ", at: .init(utf16Offset: i, in: string))
-            }
-        }
-        return string
-    }
-    
-    /// Hex string description of the BN used when being printed
+    /// Hex string description of the `UBN` used when being printed
     public var description: String {
         "0x" + hexString
     }
     
     /// Checks if the last bit is set
-    public var lastBitIsSet: Bool {
+    public var leastSignificantBitIsSet: Bool {
         words[0] % 2 == 1
     }
     
@@ -154,28 +146,15 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         set { words[0] = newValue }
     }
     
-    /// Returns index of most significant bit
+    /// Returns index of most significant set bit
     ///
-    /// Note: If the number is 0, this will return 0
-    public var mostSignificantBitIndex: Int {
+    /// Note: If the number is 0, this will return -1, because there is no significant bit
+    public var mostSignificantSetBitIndex: Int {
         if self == 0 {
-            return 0
+            return -1
         }
-        
-        let norm = normalized
-        let word = norm.words.last!
-        let size = norm.size
-        
-        var i = 1
-        while word >> i != 0 {
-            i += 1
-        }
-        
-        if size == 1 {
-            return i
-        }
-        
-        return i + (size - 1) * UInt.bitSize
+    
+        return Int(log2(Double(normalized.mostSignificantWord))) + size - 1
         
     }
     
@@ -193,21 +172,23 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     }
     
     /// Number of nonzero bits in the binary representation of this `UBN`
-    public var nonzeroBitCount: UInt64 {
-        var count: UInt64 = 0
-        
-        for word in words {
-            count += UInt64(word.nonzeroBitCount)
-        }
-        
-        return count
+    public var nonzeroBitCount: Int {
+        words.map { $0.nonzeroBitCount }.reduce(0, +)// Look at this cool swift feature! I've been actually reading Apple's documentation.
+    }
+    
+    // MARK: Private Properties
+    
+    /// The two's compliment of this `UBN`
+    public var twosCompliment: UBigNumber {
+        var comp = binaryCompliment
+        return comp.add(1, withOverflowHandling: false)
     }
     
     // MARK: - Initializers
     
     /// Default initializer, creating a `UBigNumber` with a value of `0`
     public init() {
-        self.words = [0]
+        
     }
     
     /// Creates a new ```UBigNumber``` with the integer value of `source`
@@ -222,11 +203,18 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
             return nil
         }
         
+        // if the source is less than 1, it's just 0
+        if source.exponent < 1 {
+            self.words = [0]
+            return
+        }
+        
         // should just be able to pass it to the other initializer with the float's integer value
-        let arraySize = source.exponent / 64 + ( source.exponent % 64 > 0 ? 1 : 0 )
+        
+        let arraySize = (source.exponent / 64) + (source.exponent % 64 != 0 ? 1 : 0)
         self.words = Words(repeating: 0, count: Int(arraySize))
         
-        #warning("Finish this")
+        #warning("Do this")
         
     }
     
@@ -283,23 +271,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     /// - Returns: The exact value of ```source``` as a ```UBigNumber```
     public init?<T>(exactly source: T) where T : BinaryInteger {
         
-        if source is UBigNumber {
-            self.words = (source as! UBigNumber).words
-            return
-        }
-        
-        if source == 0 {
-            return
-        }
-        
-        self.words = []
-        
-        var feed = source
-        while feed > 0 {
-            // this is probably slow
-            words.append(UInt(feed & 0xffffffffffffffff))
-            feed >>= UInt.bitSize
-        }
+        self.words = source.words.map { $0 }
         
     }
 
@@ -340,7 +312,6 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         
         words = Words(repeating: 0, count: arraySize)
         
-        #warning("This will not work on non 64-bit systems")
         for i in 0..<hex.count {
             let reversedSequence = (1..<words.count).reversed()
             
@@ -426,7 +397,10 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///
     /// - Parameters:
     ///     - integer: ```Int``` to be converted to a ```UBN```
-    public init(_ integer: Int) {
+    public init?(_ integer: Int) {
+        if integer < 0 {
+            return nil
+        }
         self.words = [UInt(integer)]
     }
     
@@ -467,94 +441,6 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
             $0.littleEndian
         }
         
-    }
-    
-    // MARK: - Methods
-    
-    /**
-     * Gets rid of extraneous leading zeroes
-     *
-     * - Returns: The normalized version of this `UBigNumber`
-     */
-    @discardableResult public mutating func normalize() -> UBigNumber {
-        // A number of a fixed size is expected to have some empty elements, so leave it alone
-        
-        // this should never happen
-        if words.count == 0 {
-            words = [0]
-            return self
-        }
-        
-        while words.last! == 0 && words.count > 1 {
-            words.removeLast()
-        }
-        
-        return self
-    }
-    
-    /// Hashes the ```UBigNumber```
-    public func hash(into hasher: inout Hasher) {
-        let norm = normalized
-        
-        for element in norm.words {
-            hasher.combine(element)
-        }
-    }
-    
-    /// Sets all bytes of this number to random data generated by Apple's secure CPRNG
-    ///
-    /// - Parameters:
-    ///     - generator: optional `SecRandomRef `, defaulted to `kSecRandomDefault`
-    public mutating func setToRandom(generator: SecRandomRef? = kSecRandomDefault) {
-        _ = SecRandomCopyBytes(generator, sizeInBytes, &words)
-    }
-    
-    /**
-     * Quickly set the numerical value of this `UBigNumber` to `0`, without changing the array size
-     */
-    public mutating func zero() {
-        for i in 0..<words.count {
-            words[i] = 0
-        }
-    }
-    
-    // MARK: - Subscripts
-    
-    /// References the word at the given index
-    public subscript (index: Int) -> UInt {
-        get { words[index] }
-        set { words[index] = newValue }
-    }
-    
-    /// References the array value at the given index. If the index does not exist, it creates it or returns 0.
-    public subscript (safe index: Int) -> UInt {
-        get { words.count > index ? words[index] : 0 }
-        set {
-            // make sure the index is an actual value of the array
-            if words.count > index {
-                words[index] = newValue
-                return
-            }
-            
-            words += Words(repeating: 0, count: index - words.count) + [newValue]
-        }
-    }
-    
-    /// References a bit with a specified index
-    public subscript (bit index: Int) -> Words.Element {
-        get {
-            self & ( 1 << index ) != 0 ? 1 : 0
-        }
-        set {
-            
-            for _ in 0..<((index / UInt.size) + 1) {
-                self.words.append(0x0)
-            }
-            
-            self &= ~(1 << index)
-            self |= UBigNumber(newValue << index)
-        
-        }
     }
     
 }

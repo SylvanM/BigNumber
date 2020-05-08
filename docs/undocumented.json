@@ -1,17 +1,10 @@
 {
   "warnings": [
     {
-      "file": "/Users/sylvanm/Programming/Swift/Packages/BigNumber/Sources/BigNumber/UBigNumber.swift",
-      "line": 34,
-      "symbol": "UBigNumber.erasingLeadingZeros",
-      "symbol_kind": "source.lang.swift.decl.var.instance",
-      "warning": "undocumented"
-    },
-    {
-      "file": "/Users/sylvanm/Programming/Swift/Packages/BigNumber/Sources/BigNumber/UBigNumber.swift",
-      "line": 40,
-      "symbol": "UBigNumber.keepingLeadingZeros",
-      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "file": "/Users/sylvanm/Programming/Swift/Packages/BigNumber/Sources/BigNumber/BN+Operations.swift",
+      "line": 18,
+      "symbol": "BigNumber.!=(_:_:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.static",
       "warning": "undocumented"
     }
   ],

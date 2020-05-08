@@ -31,14 +31,23 @@ public extension UBigNumber {
     }
     
     /**
-     * Compares this `UBN` to another, returning an `Int` representing their relation
+     * Compares this `UBN` to a `BinaryInteger, returning an `Int` representing their relation
      *
+     * - Parameters:
+     *      - other: `UBN` to compare
      *
+     * - Returns: a positive integer if `self` is greater than `other`, a negative integer if `self` is less than `other`, and `0` if `self` is equal to `other`
      */
-    func compare(to other: UBN) -> Int {
+    func compare <T: BinaryInteger> (to other: T) -> Int {
+        
+        let ubn = UBN(other)
+        
+        if self.equals(ubn) {
+            return 0
+        }
         
         let a = self.normalized
-        let b = other.normalized
+        let b = ubn.normalized
         
         if a.size > b.size {
             return 1
@@ -46,10 +55,6 @@ public extension UBigNumber {
         
         if a.size < b.size {
             return -1
-        }
-        
-        if a.equals(b) {
-            return 0
         }
         
         for i in 0..<size {
@@ -72,7 +77,7 @@ public extension UBigNumber {
      * OR's every word of this `UBigNumber` with the respective word of another `UBigNumber`
      *
      * - Parameters:
-     *      - other: another `UBigNumber` to OR with this one
+     *      - other: another `BinaryInteger` to OR with this one
      */
     @discardableResult mutating func or <T: BinaryInteger> (with other: T) -> UBigNumber {
         
@@ -229,8 +234,8 @@ public extension UBigNumber {
      * Left shifts this `UBigNumber` by some integeral amount
      *
      * - Parameters:
-     *   - shift: Amount by which to left shift this `UBigNumber`
-     *   - handleOverflow: if `true`, this operation will append any necessary words to the `UInt64` words of this `UBigNumber`
+     *      - shift: Amount by which to left shift this `UBigNumber`
+     *      - handleOverflow: if `true`, this operation will append any necessary words to the `UInt` words of this `UBigNumber`
      */
     @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
         
@@ -265,10 +270,10 @@ public extension UBigNumber {
     }
     
     /**
-     * Left shifts this `UBigNumber` by some integeral amount
+     * Right shifts this `UBigNumber` by some integeral amount
      *
      * - Parameters:
-     *   - shift: Amount by which to left shift this `UBigNumber`
+     *   - shift: Amount by which to left shift this `BigNumber`
      */
     @discardableResult mutating func rightShift <T: BinaryInteger> (by shift: T) -> UBigNumber {
         
@@ -311,7 +316,9 @@ public extension UBigNumber {
      *
      * - Returns: Sum of `self` and `other`
      */
-    @discardableResult mutating func add (_ b: UBigNumber, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
+    @discardableResult mutating func add <T: BinaryInteger> (_ other: T, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
+        
+        let b = UBN(other)
         
         var carry: UInt
         
@@ -349,12 +356,12 @@ public extension UBigNumber {
     }
     
     /**
-     * Multiplies `self` by another `BinaryInteger` and stores the result in `result`
+     * Multiplies `x` by another `y` and stores the result in `result`
      *
      * - Parameters:
      *      - x: `BinaryInteger` to multiply
      *      - y: `BinaryInteger` to multiply by
-     *      - result: `UBigNumber` to store product of `a` and `b`
+     *      - result: `UBigNumber` to store product of `x` and `y`
      *      - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      */
     static func multiply <T: BinaryInteger> (x: T, by y: T, result: inout UBigNumber, withOverflowHandling handleOverflow: Bool = true) {
@@ -370,19 +377,17 @@ public extension UBigNumber {
         }
         
         if a == 0 || b == 0 {
-            result.normalize()
+            result.words = [0]
             return
         }
         
         if a == 1 {
-            result = b
-            result.normalize()
+            result = b.normalized
             return
         }
         
         if b == 1 {
-            result = a
-            result.normalize()
+            result = a.normalized
             return
         }
         
@@ -404,7 +409,7 @@ public extension UBigNumber {
     }
     
     /**
-     * Divides `a` by `b`, and stores the quotient and remainder in given objects
+     * Divides `dividend` by `divisor`, and stores the quotient and remainder in given objects
      *
      * - Parameters:
      *      - dividend: `BinaryInteger` dividend
@@ -429,6 +434,7 @@ public extension UBigNumber {
         if cmp == -1 {
             return
         }
+            
         else if cmp == 0 {
             remainder = 0
             remainder.normalize()
@@ -475,20 +481,6 @@ public extension UBigNumber {
             
         }
         
-    }
-    
-    // MARK: - Logarithmic Operations
-    
-    /**
-     * The Binary Logarithm
-     *
-     * - Parameters:
-     *      - a: `UBigNumber` of which to computer the binary logarithm
-     *
-     * - Returns: The binary logarithm of `a`
-     */
-    static func log(_ a: UBigNumber) -> UBigNumber {
-        UBigNumber(a.mostSignificantBitIndex)
     }
     
 }
