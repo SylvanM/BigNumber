@@ -19,14 +19,18 @@ public extension UBigNumber {
      *
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
+    #warning("Add documentation explaning signness")
     func invMod(_ m: UBigNumber) -> UBigNumber {
         
-        var x: UBigNumber = 0
-        var y: UBigNumber = 0
+        var x: BigNumber = 0
+        var y: BigNumber = 0
         
-        UBigNumber.extgcd(x: &x, y: &y, a: self, b: m)
+        let a = BigNumber(self)
+        let sm = BigNumber(m)
         
-        return x
+        BigNumber.extgcd(a: a, b: sm, x: &x, y: &y)
+        
+        return x.magnitude
         
     }
     
@@ -100,54 +104,6 @@ public extension UBigNumber {
         
     }
     
-    /**
-     * Extented Euclidean Algorithm
-     *
-     * Sets `x` and `y` such that
-     *
-     * `ax + by = gcd(a, b)`
-     */
-    static func extgcd(x: inout UBigNumber, y: inout UBigNumber, a: UBigNumber, b: UBigNumber) {
-        
-        var q = UBN()
-        var r = UBN()
-        
-        var xp = UBN()
-        var yp = UBN()
-        
-        if a == 0 {
-            if b == 0 {
-                fatalError("gcd(0, 0) is undefined")
-            }
-            y = 1
-            return
-        }
-        
-        if b == 0 {
-            x = 1
-            return
-        }
-        
-        if a == 1 {
-            x = 1
-            return
-        }
-        
-        if b == 1 {
-            y = 1
-            return
-        }
-        
-        divide(dividend: a, divisor: b, quotient: &q, remainder: &r)
-        extgcd(x: &xp, y: &yp, a: b, b: r)
-        
-        y = xp - (yp * q)
-        x = yp
-        
-        return
-        
-    }
-    
     // MARK: Primality Tests
     
     /**
@@ -197,7 +153,7 @@ public extension UBigNumber {
             rand.setToRandom()
             
             while rand == self {
-                rand = UBN(randomBytes: sizeInBytes)
+                rand = UBN(secureRandomBytes: sizeInBytes)
             }
             
             if UBN.modExp(a: rand, b: rand-1, m: self) != 1{
@@ -233,9 +189,9 @@ public extension UBigNumber {
      */
     static func generateProbablePrime(bytes: Int) -> UBigNumber {
         
-        var prime = UBN(randomBytes: bytes)
+        var prime = UBN(secureRandomBytes: bytes)
         while (!prime.isProbablePrime()) {
-            prime = UBN(randomBytes: bytes)
+            prime = UBN(secureRandomBytes: bytes)
         }
         return prime
     }

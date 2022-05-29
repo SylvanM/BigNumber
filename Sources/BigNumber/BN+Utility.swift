@@ -17,18 +17,12 @@ public extension BigNumber {
      * - Returns: The normalized version of this `UBigNumber`
      */
     @discardableResult mutating func normalize() -> BigNumber {
-        self.magnitude.normalize()
-        return self
+        return BigNumber(self.magnitude.normalize())
     }
     
     /// Hashes the ```UBigNumber```
     func hash(into hasher: inout Hasher) {
-        let norm = normalized
-        
-        norm.words.forEach { word in
-            hasher.combine(word)
-        }
-        
+        magnitude.hash(into: &hasher)
         hasher.combine(self.sign)
     }
     
@@ -45,14 +39,13 @@ public extension BigNumber {
         }
     }
     
-    /**
-     * Quickly set the numerical value of this `UBigNumber` to `0`, without changing the array size
-     */
-    mutating func zero() {
-        for i in 0..<words.count {
-            words[i] = 0
-        }
-    }
+//    /**
+//     * Quickly set the numerical value of this `UBigNumber` to `0`, without changing the array size
+//     */
+//    mutating func zero() {
+//        magnitude.zero()
+//        sign = 0
+//    }
     
 }
 

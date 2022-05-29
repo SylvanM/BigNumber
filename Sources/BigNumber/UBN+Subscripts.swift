@@ -21,29 +21,50 @@ public extension UBigNumber {
     subscript (safe index: Int) -> UInt {
         get { words.count > index ? words[index] : 0 }
         set {
+            
+            // if the index is negative, just ignore it
+            if index < 0 {
+                return
+            }
+            
             // make sure the index is an actual value of the array
             if words.count > index {
                 words[index] = newValue
+                normalize()
                 return
             }
             
             words += Words(repeating: 0, count: index - words.count) + [newValue]
+            
         }
     }
     
     /// References a bit with a specified index
     subscript (bit index: Int) -> Words.Element {
         get {
-            self & ( 1 << index ) != 0 ? 1 : 0
+            let division  = index.quotientAndRemainder(dividingBy: UInt.bitSize)
+            let wordIndex = division.quotient
+            let bitIndex  = division.remainder
+            
+            return self[safe: wordIndex] & (1 << bitIndex) != 0 ? 1 : 0
         }
         set {
             
-            for _ in 0...(index / UInt.size) {
-                self.words.append(0x0)
+            let division  = index.quotientAndRemainder(dividingBy: UInt.bitSize)
+            let wordIndex = division.quotient
+            let bitIndex  = division.remainder
+            
+            if wordIndex >= self.size {
+                self.words += Words(repeating: 0, count: wordIndex - self.size + 1)
             }
             
-            self &= ~(1 << index)
-            self |= UBigNumber(newValue << index)
+            if newValue == 0 {
+                self[wordIndex] &= ~(1 << bitIndex) // set bit to 0
+            } else {
+                self[wordIndex] |= 1 << bitIndex // set bit to 1
+            }
+            
+            normalize()
         
         }
     }

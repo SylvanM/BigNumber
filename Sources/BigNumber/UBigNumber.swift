@@ -14,20 +14,24 @@ public typealias UBN = UBigNumber
 /**
  * An unsigned integer type of unfixed size
  */
-public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, UnsignedInteger, Hashable {
+public struct UBigNumber:
+    BinaryInteger, CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, UnsignedInteger, Hashable {
     
     // MARK: - Typealiases
     
+    public typealias WordType = UInt
+    
     /// Word type of ```UBigNumber```
-    public typealias Words = [UInt]
+    public typealias Words = [WordType]
     // this has to be UInt's rather than UInt64's as per Swift's requirements.
     // my computer already has 64-bit words, so this isn't a problem, but I have yet to test it on other machines.
     
     /// The element type in the ```UBN``` array
     public typealias ArrayLiteralElement = UInt
     
-    /// The integer literal type
     public typealias IntegerLiteralType = UInt
+    
+    public typealias FloatLiteralType = Float
     
     // MARK: - Public Properties
     
@@ -39,10 +43,14 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     /// Whether or not this number represents 0
     #warning("make this match dad's code")
     public var isZero: Bool {
-        self.words.allSatisfy { $0 == 0 } // this is a cool swift feature I just discovered when the syntax was auto completing!
+        self.words.allSatisfy { $0 == 0 }
     }
     
-    /// Words of the UBigNumber in the form of the word size on the machine
+    /**
+     * Words of the UBigNumber in the form of the word size on the machine
+     *
+     * - Invariant: This array is always *normalized*, as defined in `normalize()`
+     */
     public var words: UBigNumber.Words = [0]
     
     /// Size of the array
@@ -52,15 +60,14 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     
     /// The size of the integer represented by the ```UBN```, in bytes
     public var sizeInBytes: Int {
-        size * MemoryLayout<UInt>.size
+        size * MemoryLayout<WordType>.size
     }
     
     /// Size of the integer represented by the ```BN``` in bits
     #warning("Possibly rewrite this to match dad's code")
     public var bitWidth: Int {
-        let norm = normalized
-        let otherWordsBitWidth = (norm.size - 1) * 64
-        return otherWordsBitWidth + Int(log2(Double(norm.mostSignificantWord))) + 1
+        let otherWordsBitWidth = (size - 1) * 64
+        return otherWordsBitWidth + WordType.bitWidth - mostSignificantWord.leadingZeroBitCount
     }
     
     /// The binary compliment of this `UBN`
@@ -68,24 +75,12 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         UBigNumber( words.map { ~$0 } )
     }
     
-    /// Amount of leading zero bits
-    public var leadingZeroBitCount: Int {
-        var zeros = 0
-        for i in (0..<words.count).reversed() {
-            zeros += words[i].leadingZeroBitCount
-            
-            if words[i] == 0 {
-                break
-            }
-        }
-        return zeros
-    }
-    
     /// The amount of trailing zero bits
     public var trailingZeroBitCount: Int {
         var zeros = 0
         for i in 0..<words.count {
             zeros += words[i].trailingZeroBitCount
+            
             if words[i] != 0 {
                 break
             }
@@ -173,7 +168,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     
     /// Number of nonzero bits in the binary representation of this `UBN`
     public var nonzeroBitCount: Int {
-        words.map { $0.nonzeroBitCount }.reduce(0, +)// Look at this cool swift feature! I've been actually reading Apple's documentation.
+        words.map { $0.nonzeroBitCount }.reduce(0, +) // Look at this cool swift feature! I've been actually reading Apple's documentation.
     }
     
     // MARK: Private Properties
@@ -188,7 +183,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     
     /// Default initializer, creating a `UBigNumber` with a value of `0`
     public init() {
-        
+        /* Do nothing */
     }
     
     /// Creates a new ```UBigNumber``` with the integer value of `source`
@@ -209,13 +204,41 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
             return
         }
         
-        // should just be able to pass it to the other initializer with the float's integer value
+        if source <= T(UInt.max) {
+            self.words = [UInt(source)]
+            return
+        }
         
-        let arraySize = (source.exponent / 64) + (source.exponent % 64 != 0 ? 1 : 0)
+        let division = Int(source.exponent + 1).quotientAndRemainder(dividingBy: UInt.bitSize)
+        let arraySize = division.quotient + (division.remainder != 0 ? 1 : 0)
         self.words = Words(repeating: 0, count: Int(arraySize))
+
+        // I just need to get this working first
+
+        /*
+         * Visualization of what I'm trying to do:
+         * (with 8 bit words instead of 64 bit so it's easier to visualize)
+         *
+         *    |<------->|  <- significand bit pattern (with a bit width of 10) (in practice, we will (probably) never get a bit width greater than the word size, so a bit width of 10 is a bad example)
+         *          |<->|  <- lo bits
+         *    |<->|        <- hi bits (the bits above the boundary between words)
+         * 00010010|10001000|00000000|00000000|00000000|00000000|00000000
+         *    |<--------------------------------------------------------- <- the exponent of the floating point
+         *
+         */
+
+
+        let hiBitCount = Int(source.exponent + 1) % UInt.bitSize
+        let loBitCount = (T.significandBitCount + 1) - hiBitCount
+
+        self.words[words.count - 1] = UInt(source.significandBitPattern + (1 << T.significandBitCount)) >> loBitCount // shift out the lo bits and only have the hi bits as the least significant bits for this word
+        if self.words.count == 1 { return } // because we don't care about the fractional component
+        self.words[words.count - 2] = UInt((source.significandBitPattern + (1 << T.significandBitCount)) << UInt(UInt.bitWidth - loBitCount)) // set this equal to the lo bits, shifted so that they are all the most significant bits of the word
         
-        #warning("Do this")
-        
+    }
+    
+    public init<T>(_ source: T) where T : BinaryFloatingPoint {
+        self.init(exactly: source)!
     }
     
     /// Creates a new ```UBigNumber``` with the integer value of `source`
@@ -224,7 +247,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
     ///
     /// - Returns: The `UBN` representation of the integer value of `source` if `source > 0`. If not, this returns `nil`
-    public init<T>(_ source: T) where T : BinaryFloatingPoint {
+    public init<T>(floatLiteral source: T) where T : BinaryFloatingPoint {
         self.init(exactly: source)!
     }
          
@@ -271,7 +294,18 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     /// - Returns: The exact value of ```source``` as a ```UBigNumber```
     public init?<T>(exactly source: T) where T : BinaryInteger {
         
-        self.words = source.words.map { $0 }
+        self.init()
+        
+        if source < 0 {
+            return nil
+        }
+        
+        if source.bitWidth <= UInt.bitWidth {
+            self.words = [UInt(source)]
+            return
+        }
+        
+        self.init(Array(source.words))
         
     }
 
@@ -297,6 +331,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///     - elements: Array of type ```[UInt]```
     public init(arrayLiteral elements: UInt...) {
         self.words = elements
+        normalize()
     }
     
     /// Creates a ```UBN``` from a hexadecimal string
@@ -333,6 +368,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
      *      - size: Number of words in this new `UBN`
      */
     public init(size: Int) {
+        if size == 0 { return }
         self.words = Words(repeating: 0, count: size)
     }
     
@@ -342,30 +378,6 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///     - array: The array object
     ///     - bigEndian: `true` if the input array is in the Big Endian format. The default is `false`
     public init <T: BinaryInteger>(_ array: [T], bigEndian: Bool = false) {
-        
-        // A nice fellow on stackoverflow helped me with this after I asked how to do C-style array/pointer casting
-        // in Swift. It was one of the only wholesome experiences I've ever had on stack overflow. Every other time, I've
-        // been downvoted (with no explanation whatsoever) after I gave a comment or answer I legitemately (sp?) thought
-        // was helpful, but I guess someone was content with simply downvoting my response with no actual will to tell me why
-        // I might have been wrong.
-        //
-        // I wonder if there are long, rambly, informal, and unrelated comment blurbs like this in
-        // actual production. If not, there sure will be when I get hired!
-        //
-        // Here is some ASCII art:
-        //
-        //     --------
-        //    /  O  O  \
-        //    |   J    |
-        //    |  ----  |
-        //    \________/
-        //        |
-        //      ~~|~~
-        //        |
-        //        /\
-        //       /  \
-        //      /    \
-        //
         
         let typeSize = MemoryLayout<T>.size
         
@@ -404,7 +416,7 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
         self.words = [UInt(integer)]
     }
     
-    /// Returns a random ```UBN of a specified word size```
+    /// Returns a random ```UBN``` of a specified word size
     ///
     /// This uses Apples secure random bytes generator
     ///
@@ -413,15 +425,15 @@ public struct UBigNumber: BinaryInteger, CustomStringConvertible, ExpressibleByS
     ///     - generator: Generator to use (degault is ```kSecRandomDefault```)
     ///
     /// - Returns: Random ```UBN```
-    public init(randomBytes: Int, generator: SecRandomRef? = kSecRandomDefault) {
+    public init(secureRandomBytes bytes: Int, generator: SecRandomRef? = kSecRandomDefault) {
         
         // simplify this dude
-        let arraySize = randomBytes / UInt.size + ( randomBytes % UInt.size > 0 ? 1 : 0 )
+        let arraySize = bytes / UInt.size + ( bytes % UInt.size > 0 ? 1 : 0 )
         
         let newArray = Words(repeating: 0, count: arraySize)
         self.init(newArray)
         
-        _ = SecRandomCopyBytes(generator, randomBytes, &self.words)
+        _ = SecRandomCopyBytes(generator, bytes, &self.words)
     
     }
     

@@ -430,11 +430,11 @@ extension UBigNumber: Comparable, Equatable {
     
     // MARK: Modular Exponentiation (Operator Definitions)
     
-    public static func **(base: UBigNumber, power: UBigNumber) -> (base: UBigNumber, power: UBigNumber) {
+    public static func ** (base: UBigNumber, power: UBigNumber) -> (base: UBigNumber, power: UBigNumber) {
         (base: base, power: power)
     }
     
-    public static func %(lhs: (base: UBigNumber, power: UBigNumber), rhs: UBigNumber) -> UBigNumber {
+    public static func % (lhs: (base: UBigNumber, power: UBigNumber), rhs: UBigNumber) -> UBigNumber {
         return modExp(a: lhs.base, b: lhs.power, m: rhs)
     }
     

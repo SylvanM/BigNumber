@@ -14,10 +14,7 @@ public extension BigNumber {
     /// References the word at the given index
     subscript (index: Int) -> UInt {
         get { magnitude.words[index] }
-        set {
-            magnitude.words[index] = newValue
-            #warning("Gotta worry about signs here!")
-        }
+        set { magnitude.words[index] = newValue }
     }
     
     /// Safely references the word at the given index

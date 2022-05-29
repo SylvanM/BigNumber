@@ -9,6 +9,20 @@ import Foundation
 
 public extension UInt {
     
+    /// Prints this as a binary string
+    var binaryString: String {
+        if self == 0 {
+            return "0"
+        }
+        var string = ""
+        var a = self
+        while a > 0 {
+            string = String(a % 2) + string
+            a >>= 1
+        }
+        return string
+    }
+    
     /// The size, in bytes, of this integery type
     @inlinable static var size: Int {
         MemoryLayout<UInt>.size

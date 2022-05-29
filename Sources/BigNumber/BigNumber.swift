@@ -75,15 +75,10 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     public var binaryCompliment: BigNumber {
         BigNumber( words.map { $0 } )
     }
-    
-    /// Amount of leading zero bits
-    @inlinable public var leadingZeroBitCount: Int {
-        magnitude.leadingZeroBitCount
-    }
 
     /// Amount of trailing zero bits
     @inlinable public var trailingZeroBitCount: Int {
-        magnitude.leadingZeroBitCount
+        magnitude.trailingZeroBitCount
     }
     
     /// Hex string representation of the `BN`
@@ -141,6 +136,13 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     /// The number of nonzero buts in the binary representation of this `BN`
     @inlinable public var nonzeroBitCount: Int {
         magnitude.nonzeroBitCount
+    }
+    
+    /// The negative of this `BN`
+    public var negative: BigNumber {
+        var neg = self
+        neg.sign *= -1
+        return neg
     }
     
     // MARK: Initializers
@@ -229,7 +231,7 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
     
     public init(randomBytes: Int, generator: SecRandomRef? = kSecRandomDefault) {
         
-        self.magnitude = UBN(randomBytes: randomBytes, generator: generator)
+        self.magnitude = UBN(secureRandomBytes: randomBytes, generator: generator)
         self.sign = self.isZero ? 0 : [-1, 1].randomElement()!
     
     }

@@ -34,7 +34,7 @@ public extension BigNumber {
         var x: BigNumber = 0
         var y: BigNumber = 0
         
-        BigNumber.extgcd(x: &x, y: &y, a: self, b: m)
+        BigNumber.extgcd(a: self, b: m, x: &x, y: &y)
         
         return x
         
@@ -119,7 +119,7 @@ public extension BigNumber {
      *
      * `ax + by = gcd(a, b)`
      */
-    static func extgcd(x: inout BigNumber, y: inout BigNumber, a: BigNumber, b: BigNumber) {
+    static func extgcd(a: BigNumber, b: BigNumber, x: inout BigNumber, y: inout BigNumber) {
         
         #warning("Adapt this for signed stuff")
         
@@ -153,7 +153,7 @@ public extension BigNumber {
         }
         
         divide(dividend: a, divisor: b, quotient: &q, remainder: &r)
-        extgcd(x: &xp, y: &yp, a: b, b: r)
+        extgcd(a: a, b: b, x: &xp, y: &yp)
         
         y = xp - (yp * q)
         x = yp
@@ -181,52 +181,7 @@ public extension BigNumber {
      * - Returns: `true` if `n` is a probable prime
      */
     func isProbablePrime() -> Bool {
-        
-        if self <= 1 {
-            // Part of the definition of a prime is that it is greater than 1
-            return false
-        }
-        
-        var rand = self
-        
-        if self == 1 {
-            return false
-        }
-        
-        // Quick check to make sure this number isn't divisible by any of the usual suspects
-        let smallPrimes: [BN] = [
-            2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31
-        ]
-        
-        var m: BN = 1
-        
-        for prime in smallPrimes {
-            if self == prime {
-                return true
-            }
-            m *= prime
-        }
-        
-        if self.gcd(m) != 1 {
-            return false
-        }
-        
-        for _ in 0..<128 {
-            
-            rand.setToRandom()
-            
-            while rand == self {
-                rand = BN(randomBytes: sizeInBytes)
-            }
-            
-            if BN.modExp(a: rand, b: rand-1, m: self) != 1{
-                return false
-            }
-            
-        }
-        
-        return true
-        
+        sign == 1 && magnitude.isProbablePrime()
     }
     
     /**
@@ -251,12 +206,7 @@ public extension BigNumber {
      * - Returns: Probable prime with `bytes` bytes
      */
     static func generateProbablePrime(bytes: Int) -> BigNumber {
-        
-        var prime = UBN(randomBytes: bytes)
-        while (!prime.isProbablePrime()) {
-            prime = UBN(randomBytes: bytes)
-        }
-        return BN(prime)
+        BigNumber(UBigNumber.generateProbablePrime(bytes: bytes))
     }
     
 }

@@ -17,7 +17,6 @@ public extension UBigNumber {
      * - Returns: The normalized version of this `UBigNumber`
      */
     @discardableResult mutating func normalize() -> UBigNumber {
-        // A number of a fixed size is expected to have some empty elements, so leave it alone
         
         // this should never happen
         if words.count == 0 {
@@ -25,8 +24,14 @@ public extension UBigNumber {
             return self
         }
         
-        while words.last! == 0 && words.count > 1 {
+        var theWords = words
+        var wordCount = words.count
+        var lastWord = theWords[theWords.count - 1]
+        while lastWord == 0 && wordCount > 1 {
             words.removeLast()
+            theWords = words
+            wordCount = theWords.count
+            lastWord = theWords[theWords.count - 1]
         }
         
         return self
@@ -49,13 +54,13 @@ public extension UBigNumber {
         _ = SecRandomCopyBytes(generator, sizeInBytes, &words)
     }
     
-    /**
-     * Quickly set the numerical value of this `UBigNumber` to `0`, without changing the array size
-     */
-    mutating func zero() {
-        for i in 0..<words.count {
-            words[i] = 0
-        }
-    }
+//    /**
+//     * Quickly set the numerical value of this `UBigNumber` to `0`, without changing the array size
+//     */
+//    mutating func zero() {
+//        for i in 0..<words.count {
+//            words[i] = 0
+//        }
+//    }
     
 }
