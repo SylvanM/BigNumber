@@ -18,7 +18,7 @@ public extension UBigNumber {
     }
     
     /// References the array value at the given index. If the index does not exist, it creates it or returns 0.
-    subscript (safe index: Int) -> UInt {
+    subscript (safe index: Int) -> WordType {
         get { words.count > index ? words[index] : 0 }
         set {
             
@@ -63,7 +63,7 @@ public extension UBigNumber {
             } else {
                 self[wordIndex] |= 1 << bitIndex // set bit to 1
             }
-            
+
             normalize()
         
         }

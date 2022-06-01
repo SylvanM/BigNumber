@@ -14,8 +14,7 @@ public typealias UBN = UBigNumber
 /**
  * An unsigned integer type of unfixed size
  */
-public struct UBigNumber:
-    BinaryInteger, CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, UnsignedInteger, Hashable {
+public struct UBigNumber: UBNProtocol {
     
     // MARK: - Typealiases
     
@@ -27,7 +26,7 @@ public struct UBigNumber:
     // my computer already has 64-bit words, so this isn't a problem, but I have yet to test it on other machines.
     
     /// The element type in the ```UBN``` array
-    public typealias ArrayLiteralElement = UInt
+    public typealias ArrayLiteralElement = WordType
     
     public typealias IntegerLiteralType = UInt
     
@@ -41,7 +40,6 @@ public struct UBigNumber:
     }
     
     /// Whether or not this number represents 0
-    #warning("make this match dad's code")
     public var isZero: Bool {
         self.words.allSatisfy { $0 == 0 }
     }
@@ -51,7 +49,7 @@ public struct UBigNumber:
      *
      * - Invariant: This array is always *normalized*, as defined in `normalize()`
      */
-    public var words: UBigNumber.Words = [0]
+    public internal(set) var words: UBigNumber.Words = [0]
     
     /// Size of the array
     @inlinable public var size: Int {
@@ -64,8 +62,9 @@ public struct UBigNumber:
     }
     
     /// Size of the integer represented by the ```BN``` in bits
-    #warning("Possibly rewrite this to match dad's code")
     public var bitWidth: Int {
+        if isZero { return 0 }
+        
         let otherWordsBitWidth = (size - 1) * 64
         return otherWordsBitWidth + WordType.bitWidth - mostSignificantWord.leadingZeroBitCount
     }
@@ -130,13 +129,13 @@ public struct UBigNumber:
     }
     
     /// Accesses the most significant word of this `UBN`
-    @inlinable public var mostSignificantWord: UInt {
+    public var mostSignificantWord: UInt {
         get { words[size - 1] }
         set { words[size - 1] = newValue }
     }
     
     /// Acesses the least significant word of this `UBN`
-    @inlinable public var leastSignificantWord: UInt {
+    public var leastSignificantWord: UInt {
         get { words[0] }
         set { words[0] = newValue }
     }
@@ -145,12 +144,7 @@ public struct UBigNumber:
     ///
     /// Note: If the number is 0, this will return -1, because there is no significant bit
     public var mostSignificantSetBitIndex: Int {
-        if self == 0 {
-            return -1
-        }
-    
-        return Int(log2(Double(normalized.mostSignificantWord))) + size - 1
-        
+        bitWidth - 1
     }
     
     /// Whether or not the `UBN` is normal
@@ -158,12 +152,6 @@ public struct UBigNumber:
     /// "Normal" means that there are no extraneous zeros in the `UBN`
     public var isNormal: Bool {
         words.count == 1 ? true : words.last! != 0
-    }
-    
-    /// The normalized version of this `UBN`
-    public var normalized: UBigNumber {
-        var norm = self
-        return norm.normalize()
     }
     
     /// Number of nonzero bits in the binary representation of this `UBN`
@@ -328,9 +316,17 @@ public struct UBigNumber:
     /// Creates a ```UBN``` from an array literal
     ///
     /// - Parameters:
-    ///     - elements: Array of type ```[UInt]```
-    public init(arrayLiteral elements: UInt...) {
-        self.words = elements
+    ///     - elements: Array of type ```[WordType]```
+    public init(arrayLiteral elements: WordType...) {
+        self.init(array: elements)
+    }
+    
+    /// Creates a `UBN` from an array
+    ///
+    /// - Parameters:
+    ///     - words: Array of typee `[WordType]`
+    public init(array: [WordType]) {
+        self.words = array
         normalize()
     }
     
@@ -342,12 +338,18 @@ public struct UBigNumber:
         
         // sanitize the string, add leading zeros if necessary
         
-        let sanatizedString = (hex.count >= 2) ? ((hex[1] == "x" || hex[1] == "X") ? String(hex.dropFirst(2)) : hex) : hex
-        let arraySize = hex.count >= 16 ? sanatizedString.count / 16 : 1
+        var sanatizedString = (hex.count >= 2) ? ((hex[1] == "x" || hex[1] == "X") ? String(hex.dropFirst(2)) : hex) : hex
+        
+        sanatizedString = sanatizedString.filter { c in
+            c != " "
+        }
+        
+        let arraySize = hex.count >= 16 ? (sanatizedString.count / 16 + (sanatizedString.count % 16 == 0 ? 0 : 1)) : 1
         
         words = Words(repeating: 0, count: arraySize)
         
         for i in 0..<hex.count {
+            
             let reversedSequence = (1..<words.count).reversed()
             
             for j in reversedSequence {
@@ -359,17 +361,6 @@ public struct UBigNumber:
             self[0] |= UInt(toNibble(hex[i]) & 0x0f)
         }
         
-    }
-    
-    /**
-     * Creates a `UBN` with an empty array
-     *
-     * - Parameters:
-     *      - size: Number of words in this new `UBN`
-     */
-    public init(size: Int) {
-        if size == 0 { return }
-        self.words = Words(repeating: 0, count: size)
     }
     
     /// Creates a `UBN` from an array object representing a number with element type `BinaryInteger`.

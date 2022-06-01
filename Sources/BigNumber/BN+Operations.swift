@@ -2,107 +2,79 @@
 //  File.swift
 //  
 //
-//  Created by Sylvan Martin on 5/7/20.
+//  Created by Sylvan Martin on 5/31/22.
 //
 
 import Foundation
 
 public extension BigNumber {
     
-    // MARK: - Comparison
+    // MARK: Comparisons
     
-    /**
-     * Checks if another `BN` equals this one
-     *
-     * - Parameters:
-     *      - other: `BN` to compare
-     *
-     * - Returns: `true` if the numbers are numerically equal
-     */
-    func equals(_ other: BN) -> Bool {
+    func equals(_ other: BigNumber) -> Bool {
         
-        var thisHash  = Hasher()
-        var otherHash = Hasher()
+        if self.sign != other.sign {
+            return false
+        }
         
-        self.hash(into: &thisHash)
-        other.hash(into: &otherHash)
-        
-        // should I not hash the signs and instead compare them separately?
-        
-        #warning("Speed test this, testing the other way of comparing equivalence")
-        // like jhust compare the magnitudes and signs separately
-        
-        return thisHash.finalize() == otherHash.finalize()
+        return self.magnitude.equals(other.magnitude)
         
     }
     
     /**
-     * Compares this `BN` to another, returning an `Int` representing their relation
+     * Compares this `BN` to a `BinaryInteger`, returning an `Int` representing their relation
      *
      * - Parameters:
      *      - other: `BN` to compare
      *
      * - Returns: a positive integer if `self` is greater than `other`, a negative integer if `self` is less than `other`, and `0` if `self` is equal to `other`
      */
-    func compare(to other: BN) -> Int {
+    func compare <T: BinaryInteger> (to other: T) -> Int {
         
-        // try to get the fast operations out of the way first
+        let signComparison = self.sign - Int(other.signum())
         
-        if self.sign != other.sign {
-            return self.sign - other.sign
+        if signComparison != 0 {
+            return signComparison
         }
         
-        // signs are equal, so now just compare magnitudes
+        let magnitudeComparison = magnitude.compare(to: other.magnitude)
         
-        let comparison = compare(to: other)
-        
-        return comparison == 0 ? 0 : (
-            self.sign == -1 ? -comparison : comparison
-        )
+        return sign * magnitudeComparison
         
     }
     
-    // MARK: - Bitwise Operations
+    // MARK: Bitwise Operations
     
     /**
-     * `OR`s every bit of this `BigNumber` with the respective bit of another `BigNumber`
+     * OR's every word of this `BigNumber` with the respective word of another `BigNumber`
      *
      * - Parameters:
-     *      - other: another `BinaryInteger` to `OR` with this one
-     *
-     * - Returns: The result of the bitwise `OR` operation
+     *      - other: another `BinaryInteger` to OR with this one
      */
     @discardableResult mutating func or <T: BinaryInteger> (with other: T) -> BigNumber {
-        self.magnitude.or(with: other.magnitude)
-        self.sign = self.isZero ? 0 : 1
+        magnitude.or(with: other)
         return self
     }
     
     /**
-     * `AND`s every bit of this `BigNumber` with the respective bit of another `BigNumber`
+     * AND's every word of this `UBigNumber` with the corresponding word of another `UBigNumber`
      *
      * - Parameters:
-     *      - other: another `BinaryInteger` to `AND` with this one
-     *
-     * - Returns: The result of the bitwise `AND` operation
+     *      - other: another `UBigNumber` to AND with this one
      */
     @discardableResult mutating func and <T: BinaryInteger> (with other: T) -> BigNumber {
-        self.magnitude.and(with: other.magnitude)
-        self.sign *= Int(other.signum())
+        magnitude.and(with: other)
         return self
     }
     
     /**
-     * `XOR`s every bit of this `BigNumber` with the respective bit of another `BigNumber`
+     * XOR's every word of this `UBigNumber` with the corresponding word of another `UBigNumber`
      *
      * - Parameters:
-     *      - other: another `BinaryInteger` to `XOR` with this one
-     *
-     * - Returns: The result of the bitwise `XOR` operation
+     *      - other: another `UBigNumber` to XOR with this one
      */
-    @discardableResult mutating func xor  <T: BinaryInteger> (with other: T) -> BigNumber {
-        self.magnitude.xor(with: other.magnitude)
-        self.sign = self.isZero ? 0 : 1
+    @discardableResult mutating func xor <T: BinaryInteger> (with other: T) -> BigNumber {
+        magnitude.xor(with: other)
         return self
     }
     
@@ -110,14 +82,10 @@ public extension BigNumber {
      * Left shifts this `BigNumber` by some integeral amount
      *
      * - Parameters:
-     *      - shift: Amount by which to left shift this `BigNumber`
-     *      - handleOverflow: if `true`, this operation will append any necessary words to the words array of this `BigNumber`
-     *
-     * - Returns: The result of the left shift operation
+     *      - shift: Amount by which to left shift this `UBigNumber`
      */
-    @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T, withOverflowHandling handleOverflow: Bool = true) -> BigNumber {
-        self.magnitude.leftShift(by: shift, withOverflowHandling: handleOverflow)
-        self.sign = self.isZero ? 0 : 1
+    @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T) -> BigNumber {
+        magnitude.leftShift(by: shift)
         return self
     }
     
@@ -125,68 +93,105 @@ public extension BigNumber {
      * Right shifts this `BigNumber` by some integeral amount
      *
      * - Parameters:
-     *      - shift: Amount by which to right shift this `BigNumber`
+     *   - shift: Amount by which to left shift this `BigNumber`
      */
     @discardableResult mutating func rightShift <T: BinaryInteger> (by shift: T) -> BigNumber {
-        self.magnitude.rightShift(by: shift)
-        self.sign = self.isZero ? 0 : 1
+        magnitude.rightShift(by: shift)
         return self
     }
     
-    // MARK: - Arithmetic Operations
+    // MARK: Arithmetic Operations
     
     /**
-     * Adds another `BinaryInteger` to this `BigNumber`
+     * Adds another `BinaryInteger` to this `UBigNumber`
      *
      * - Parameters:
-     *      - other: A `BinaryInteger` to add to this `BigNumber`
+     *   - other: A `BinaryInteger` to add to this `UBigNumber`
+     *   - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      *
-     * - Returns: Result of the addition operation
+     * - Returns: Sum of `self` and `other`
      */
-    @discardableResult mutating func add <T: BinaryInteger> (_ other: T) -> BigNumber {
+    @discardableResult mutating func add <T: BinaryInteger> (_ other: T, withOverflowHandling handleOverflow: Bool = true) -> BigNumber {
+        var otherBN = BN(other)
         
-        if self.sign == other.signum() {
-            self.magnitude.add(other.magnitude)
+        if self.sign == otherBN.sign {
+            return self.add(otherBN)
+        }
+        
+        if self.sign == 0 {
+            self = otherBN
+        }
+        
+        if self.sign == 1 {
+            return self.subtract(otherBN.negative)
+        }
+        
+        // sign is -1
+        self = otherBN.subtract(self.negative)
+        return self
+        
+    }
+    
+    @discardableResult
+    mutating func modadd(_ other: BigNumber, m: BigNumber) -> BigNumber{
+        self %= m
+        self.add(other % m)
+        self %= m
+        return self
+    }
+    
+    /// Subtracts a numerical value from this `UBN`
+    /// - Parameter other: `BinaryInteger` to subtract
+    /// - Returns: difference of `self` and `other`
+    @discardableResult mutating func subtract <T: BinaryInteger> (_ other: T) -> BigNumber {
+        
+        var otherBN = BN(other)
+        
+        if self.sign == 0 {
+            self = otherBN.negative
+        }
+        
+        if self.sign == -1 {
+            
+            if otherBN.sign == -1 {
+                var neg = otherBN.negative
+                self = neg.subtract(self.negative)
+                return self
+            }
+            
+            // other sign is 1
+            self.magnitude.add(otherBN.magnitude)
+            return self
+            
+        }
+        
+        // sign is 1
+        if otherBN.sign == -1 {
+            self.magnitude.add(otherBN.magnitude)
             return self
         }
         
-        let comparison = self.magnitude.compare(to: other.magnitude)
-        
-        if comparison == 0 {
-            self.magnitude.zero()
-            self.sign = 0
-            return self
+        if self.magnitude == other.magnitude {
+            return 0
         }
         
-        if comparison > 0 {
+        if self.magnitude > other.magnitude {
             self.magnitude.subtract(other.magnitude)
             return self
         }
         
-        self.magnitude = UBN(other) - self.magnitude
-        self.sign = -self.sign
-        
+        self.magnitude = otherBN.magnitude.subtract(self.magnitude)
+        self.sign = -1
         return self
         
     }
     
-    /**
-     * Subtracts another `BinaryInteger` from this `BigNumber`
-     *
-     * - Parameters:
-     *      - other: A `BinaryInteger` to subtract from this `BigNumber`
-     *
-     * - Returns: Result of the subtraction operation
-     */
-    @discardableResult mutating func subtract <T: BinaryInteger> (_ other: T) -> BigNumber {
-        
-        if other.signum() == 0 {
-            return self
-        }
-        
-        // is this too slow?
-        return self.add(other * -1)
-        
+    @discardableResult
+    mutating func modsub(_ other: BigNumber, m: BigNumber) -> BigNumber {
+        self %= m
+        self.subtract(other % m)
+        self %= m
+        return self
     }
     
     /**
@@ -194,12 +199,25 @@ public extension BigNumber {
      *
      * - Parameters:
      *      - x: `BinaryInteger` to multiply
-     *      - y: `BinaryInteger` to multiply
-     *      - result: `BigNumber` to store product of `x` and `y`
+     *      - y: `BinaryInteger` to multiply by
+     *      - result: `UBigNumber` to store product of `x` and `y`
+     *      - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      */
-    static func multiply <T: BinaryInteger> (x: T, by y: T, result: inout BigNumber) {
-        UBigNumber.multiply(x: x.magnitude, by: y.magnitude, result: &result.magnitude)
-        result.sign = Int(x.signum() * y.signum())
+    static func multiply <T: BinaryInteger> (x: T, y: T, result: inout BigNumber) {
+        
+        if x.signum() == y.signum() {
+            result.sign = 1
+        }
+        
+        result.sign = -1
+        
+        UBN.multiply(x: x.magnitude, y: y.magnitude, result: &result.magnitude)
+        
+    }
+    
+    static func modmul(x: BigNumber, y: BigNumber, m: BigNumber, result: inout BigNumber) {
+        BN.multiply(x: x % m, y: y % m, result: &result)
+        result %= m
     }
     
     /**
@@ -207,20 +225,26 @@ public extension BigNumber {
      *
      * - Parameters:
      *      - dividend: `BinaryInteger` dividend
-     *      - divisor: `BinaryInteger` divisor
-     *      - quotient: `BigNumber` object that stores the quotient
-     *      - remainder: `BigNumber` object storing the remainder
+     *      - divisor: `BinaryInteger`
+     *      - quotient: `UBigNumber` object that stores the quotient
+     *      - remainder: `UBigNumber` object that stores the remainder
      */
     static func divide <T: BinaryInteger> (dividend: T, divisor: T, quotient: inout BigNumber, remainder: inout BigNumber) {
-        // take care of signs
-        quotient.sign = dividend.signum() == divisor.signum() ? 1 : -1
-        remainder.sign = Int(dividend.signum())
         
-        UBigNumber.divide(dividend: dividend.magnitude, divisor: divisor.magnitude, quotient: &quotient.magnitude, remainder: &remainder.magnitude)
+        if dividend.signum() == divisor.signum() {
+            quotient.sign = 1
+        }
         
-        quotient.sign  = quotient.magnitude.isZero ? 0 : quotient.sign
-        remainder.sign = remainder.magnitude.isZero ? 0 : remainder.sign
+        quotient.sign = -1
+        remainder.sign = 1
+        
+        UBN.divide(dividend: dividend, divisor: divisor, quotient: &quotient.magnitude, remainder: &remainder.magnitude)
+        
     }
-
+    
+    func moddiv(by other: BigNumber, m: BigNumber) -> BigNumber {
+        BN(UBN(self).moddiv(by: UBN(other), m: UBN(m)))
+    }
+    
     
 }

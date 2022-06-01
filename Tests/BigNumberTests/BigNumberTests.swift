@@ -12,13 +12,20 @@ final class BigNumberTests: XCTestCase {
     }
 
     func testExample() {
+        let x = UBN(UBigNumber.WordType.max)
+        print(x)
+        let y: UBN = "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000"
+        
+        XCTAssertEqual(y.words, [1, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 0x5555555555555554, 0x0000000000000000, 0x0000000000000000].reversed())
         
     }
 
     // MARK: Comparison Tests
-
-    #warning("Implement sign testing")
-
+    
+    func testSignedComparisons() {
+        
+    }
+    
     /**
      * Comparatison Tests
      */
@@ -67,14 +74,11 @@ final class BigNumberTests: XCTestCase {
         var ubn: UBN = 0
         
         let maximumFloat: Float = .greatestFiniteMagnitude
+        ubn = UBN(maximumFloat)
         
         let float: Float = 4.0023e+10
         
         ubn = UBN(float)
-        print(ubn)
-        print(float)
-        
-        print(UBN(maximumFloat))
 
         XCTAssert(UBN(exactly: -123213.87) == nil)
 
@@ -104,17 +108,6 @@ final class BigNumberTests: XCTestCase {
         ubn = "0x"
         XCTAssertEqual(ubn.words, [0])
 
-        // test size initialization (there's literally no reason this shouldn't work)
-        for _ in 0..<256 {
-            let randSize = Int.random(in: 0...16)
-            ubn = UBN(size: randSize)
-            if randSize == 0 {
-                XCTAssertEqual(ubn.words.count, 1)
-            } else {
-                XCTAssertEqual(randSize, ubn.words.count)
-            }
-        }
-
         // test array initialization thingyyyyy
         let array: [UInt32] = [0, 0xffffffff, 0, 0xffffffff]
         ubn = UBN(array)
@@ -138,7 +131,6 @@ final class BigNumberTests: XCTestCase {
 
         // I'm nut really sure how to test this...
         ubn = UBN(secureRandomBytes: Int.random(in: 1...8))
-        ubn.setToRandom()
 
         // test data initialization
 
@@ -198,7 +190,6 @@ final class BigNumberTests: XCTestCase {
 
         // not really sure how much testing the "zero()" method needs...
         let expectedCount = a.size
-        a.zero()
         XCTAssertEqual(expectedCount, a.size)
 
     }
@@ -237,9 +228,6 @@ final class BigNumberTests: XCTestCase {
             let ubn = UBN(integer)!
             XCTAssertEqual(ubn.bitWidth, Int(log2(Double(integer))) + 1)
         }
-        
-        print("Testing a thing:")
-        print(UInt.bitWidth - (4).leadingZeroBitCount)
 
     }
 
@@ -349,7 +337,6 @@ final class BigNumberTests: XCTestCase {
 
         x[bit: 0] = 1
         x <<= 255
-        print(x)
         x -= 19
         XCTAssertTrue(x.isNormal)
         XCTAssertEqual(x, y) // XCTAssertEqual failed: ("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFED") is not equal to ("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED")
@@ -357,7 +344,6 @@ final class BigNumberTests: XCTestCase {
         x >>= 255
         XCTAssertTrue(x.isNormal)
         XCTAssertTrue(x.isZero)
-
         x.normalize()
         x[bit: 0] = 1
         x <<= 256
@@ -365,30 +351,25 @@ final class BigNumberTests: XCTestCase {
         XCTAssertTrue(x.words.allSatisfy { $0 == UInt.max } )
 
         XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x.bitWidth, 256) // XCTAssertEqual failed: ("65") is not equal to ("256")
+        XCTAssertEqual(x.bitWidth, 256)
 
         x = z << 129
-        // in your source code, this loop was reversed. because there was nothing but comparisons going on, I assumed
-        // it would be fine to have it not reversed because the order wouldn't matter
-        for i in 130...384 {
-            XCTAssertTrue( !(i % 2 == 0 && (x[bit: i] == 0 || x[bit: i] == 1)) ) // XCTAssertTrue failed
-        }
+        XCTAssertEqual(x, "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000")
 
         for i in 0...129 {
-            XCTAssertFalse(x[bit: i] == 1) // XCTAssertFalse failed
+            XCTAssertFalse(x[bit: i] == 1)
         }
 
         XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x.bitWidth, 385) // XCTAssertEqual failed: ("321") is not equal to ("385")
 
         x >>= 380
         XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x.bitWidth, 5) // XCTAssertEqual failed: ("197") is not equal to ("5")
+        XCTAssertEqual(x, 0x15)
 
         x >>= 73
         XCTAssertTrue(x.isNormal)
-        XCTAssertTrue(x.isZero) // XCTAssertTrue failed
-        XCTAssertEqual(x.bitWidth, 0) // XCTAssertEqual failed: ("124") is not equal to ("0")
+        XCTAssertTrue(x.isZero)
+        XCTAssertEqual(x.bitWidth, 0)
 
     }
 
@@ -404,53 +385,70 @@ final class BigNumberTests: XCTestCase {
      */
     func testBitwiseLogicalOperators() {
 
-        let x: BN = "aaaaaaaaaaaaaaaa6666666666666666aaaaaaaaaaaaaaaa6666666666666666"
-        var y: BN = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
+        let x: UBN = "aaaaaaaaaaaaaaaa6666666666666666aaaaaaaaaaaaaaaa6666666666666666"
+        var y: UBN = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
 
-        var correctAnd: BN = "a0a0a0a0a0a0a0a06060606060606060a0a0a0a0a0a0a0a06060606060606060"
+        var correctAnd: UBN = "a0a0a0a0a0a0a0a06060606060606060a0a0a0a0a0a0a0a06060606060606060"
         var result = x & y
         XCTAssertTrue(result.isNormal)
         XCTAssertEqual(result, correctAnd, "AND Failed")
 
-        var correctOr: BN = "fafafafafafafafaf6f6f6f6f6f6f6f6fafafafafafafafaf6f6f6f6f6f6f6f6"
+        var correctOr: UBN = "fafafafafafafafaf6f6f6f6f6f6f6f6fafafafafafafafaf6f6f6f6f6f6f6f6"
         result = x | y
         XCTAssertTrue(result.isNormal)
         XCTAssertEqual(result, correctOr, "OR Failed")
 
-        var correctXor: BN = "5a5a5a5a5a5a5a5a96969696969696965a5a5a5a5a5a5a5a9696969696969696"
+        var correctXor: UBN = "5a5a5a5a5a5a5a5a96969696969696965a5a5a5a5a5a5a5a9696969696969696"
         result = x ^ y
         XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctXor, "XOR Failed") // XCTAssertEqual failed: ("0xA0A0A0A0A0A0A0A06060606060606060A0A0A0A0A0A0A0A06060606060606060") is not equal to ("0x5A5A5A5A5A5A5A5A96969696969696965A5A5A5A5A5A5A5A9696969696969696")
-
+        XCTAssertEqual(result, correctXor, "XOR Failed")
+        
         // test with unequal lengths
 
         y.rightShift(by: 64)
 
-        correctAnd = "06060606060606060a0a0a0a0a0a0a0a06060606060606060"
+        correctAnd = "6060606060606060a0a0a0a0a0a0a0a06060606060606060"
         result = x & y
-        XCTAssertTrue(result.isNormal) // XCTAssertEqual failed: ("0xA0A0A0A0A0A0A0A06060606060606060A0A0A0A0A0A0A0A06060606060606060") is not equal to ("0x5A5A5A5A5A5A5A5A96969696969696965A5A5A5A5A5A5A5A9696969696969696")
+        XCTAssertTrue(result.isNormal)
         XCTAssertEqual(result, correctAnd, "AND with unequal lengths failed")
-
+        
         correctOr = "aaaaaaaaaaaaaaaaf6f6f6f6f6f6f6f6fafafafafafafafaf6f6f6f6f6f6f6f6"
         result = x | y
         XCTAssertTrue(result.isNormal)
         XCTAssertEqual(result, correctOr, "OR with unequal lengths failed")
-
+    
         correctXor = "aaaaaaaaaaaaaaaa96969696969696965a5a5a5a5a5a5a5a9696969696969696"
         result = x ^ y
         XCTAssertTrue(result.isNormal) // XCTAssertTrue failed
-        XCTAssertEqual(result, correctXor, "XOR with unequal lengths failed") // XCTAssertEqual failed: ("0x6060606060606060A0A0A0A0A0A0A0A06060606060606060") is not equal to ("0xAAAAAAAAAAAAAAAA96969696969696965A5A5A5A5A5A5A5A9696969696969696")
-
+        XCTAssertEqual(result, correctXor, "XOR with unequal lengths failed")
+        
     }
 
     // MARK: Test addition and subtraction
     
-    func testUnsignedAdditionAndSubtraction() {
-        var a = UBN()
-        a.setToRandom()
-        let b = a
+    func testUnsignedAdditionMultiplicationSymmetry() {
         
-        XCTAssertEqual(a - b, 0)
+        for i in 1...256 {
+            
+            let a = UBN.random(size: i)
+            
+            var accumulator: UBN = 0
+            
+            let scalar = Int.random(in: 0...100)
+            
+            for _ in 0..<scalar {
+                accumulator.add(a)
+            }
+            
+            XCTAssertEqual(accumulator, scalar * a, "Repeated addition and multiplication are the same")
+        }
+        
+    }
+    
+    func testSignedAdditionAndSubtraction() {
+        
+        
+        
     }
     
 }

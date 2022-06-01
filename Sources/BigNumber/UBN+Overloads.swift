@@ -8,16 +8,6 @@
 import Foundation
 import CryptoKit
 
-precedencegroup ExponentiationPrecedence {
-    higherThan: MultiplicationPrecedence
-    lowerThan: BitwiseShiftPrecedence
-    associativity: none
-    assignment: false
-}
-
-/// Exponentiation operator to be used with modular exponentiation modifier
-infix operator **: ExponentiationPrecedence
-
 extension UBigNumber: Comparable, Equatable {
     
     // MARK: - Comparative Operators
@@ -148,15 +138,6 @@ extension UBigNumber: Comparable, Equatable {
         lhs.xor(with: rhs)
     }
     
-    /// Left bitshifts a value by another, and stores the result in the left hand side variable, with no overflow handling
-    ///
-    /// - Parameters:
-    ///     - lhs: value to left bitshift
-    ///     - rhs: amoutnt by which to left bitshift
-    public static func &<<= <RHS>(lhs: inout UBigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.leftShift(by: rhs, withOverflowHandling: false)
-    }
-    
     /// Left bitshifts a value by another, and stores the result in the left hand side variable
     ///
     /// - Parameters:
@@ -228,18 +209,6 @@ extension UBigNumber: Comparable, Equatable {
         return a.xor(with: rhs)
     }
     
-    /// Left bitshifts the given BigNumber by a given integer amount, with no overflow handling
-    ///
-    /// - Parameters:
-    ///     - lhs: `UBigNumber` to bitshift
-    ///     - rhs: Amount to bit shift
-    ///
-    /// - Returns: Exactly what you would expect
-    public static func &<< <RHS>(lhs: UBigNumber, rhs: RHS) -> UBigNumber where RHS : BinaryInteger {
-        var a = lhs
-        return a.leftShift(by: rhs, withOverflowHandling: false)
-    }
-    
     /// Left bitshifts the given BigNumber by a given integer amount with overflow handling. When the result would be of a bigger size than the
     /// given ```BN```, a new ```UInt64``` is appended to the array
     ///
@@ -267,16 +236,6 @@ extension UBigNumber: Comparable, Equatable {
     
     // MARK: Arithmetic Operators
     
-    /// Adds two ```UBigNumber```s with no overflow handling. Any numbers that would usually be carried instead
-    /// result in an overflow
-    ///
-    /// - Parameters:
-    ///   - lhs: ```UBigNumber``` to increment
-    ///   - rhs: ```UBigNumber``` to add to ```lhs```
-    public static func &+= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        lhs.add(rhs, withOverflowHandling: false)
-    }
-    
     /// Adds two BigNumbers and assigns the sum to the left operand
     ///
     /// This will add elements to the array if needed
@@ -295,14 +254,15 @@ extension UBigNumber: Comparable, Equatable {
     }
     
     /**
-     * Multiplication Assignment operator with no overflow handling
+     *
+     * Multiplication assignment operator
      *
      * - Parameters:
      *      - lhs: multiplicand
      *      - rhs: multiplier
      */
-    public static func &*= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        UBigNumber.multiply(x: lhs, by: rhs, result: &lhs, withOverflowHandling: false)
+    public static func *= (lhs: inout UBigNumber, rhs: UBigNumber) {
+        multiply(x: lhs, y: rhs, result: &lhs)
     }
     
     /**
@@ -313,8 +273,8 @@ extension UBigNumber: Comparable, Equatable {
      *      - lhs: multiplicand
      *      - rhs: multiplier
      */
-    public static func *= (lhs: inout UBigNumber, rhs: UBigNumber) {
-        multiply(x: lhs, by: rhs, result: &lhs)
+    public static func *= (lhs: inout UBigNumber, rhs: Int) {
+        multiply(x: lhs, y: UBN(rhs), result: &lhs)
     }
     
     /**
@@ -335,20 +295,6 @@ extension UBigNumber: Comparable, Equatable {
     }
     
     // MARK: Non-Assignment Arithmetic Operators
-    
-    /// Adds two BigNumbers, with no overflow handling
-    ///
-    /// This won't add any elements to the BigNumber array
-    ///
-    /// - Parameters:
-    ///     - lhs: `UBigNumber`
-    ///     - rhs: `UBigNumber`
-    ///
-    /// - Returns: Sum of lhs and rhs without overflow prevention
-    public static func &+ (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        var a = lhs
-        return a.add(rhs, withOverflowHandling: false)
-    }
     
     /// Adds two BigNumbers
     ///
@@ -385,20 +331,33 @@ extension UBigNumber: Comparable, Equatable {
     /// - Returns: Product of ```lhs``` and ```rhs```
     public static func * (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
         var p = UBN()
-        UBigNumber.multiply(x: lhs, by: rhs, result: &p)
+        UBigNumber.multiply(x: lhs, y: rhs, result: &p)
         return p
     }
     
-    /// Multiplies two `UBigNumber`s with no overflow handling
+    /// Multiplies a BigNumber by an `Int`
     ///
     /// - Parameters:
     ///     - lhs: A BigNumber to multiply
     ///     - rhs: A BigNumber to multiply
     ///
     /// - Returns: Product of ```lhs``` and ```rhs```
-    public static func &* (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
+    public static func * (lhs: UBigNumber, rhs: Int) -> UBigNumber {
         var p = UBN()
-        UBigNumber.multiply(x: lhs, by: rhs, result: &p, withOverflowHandling: false)
+        UBigNumber.multiply(x: lhs, y: UBN(rhs), result: &p)
+        return p
+    }
+    
+    /// Multiplies an `Int` by a `UBN`
+    ///
+    /// - Parameters:
+    ///     - lhs: An integer to multiply
+    ///     - rhs: A BigNumber to multiply
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    public static func * (lhs: Int, rhs: UBigNumber) -> UBigNumber {
+        var p = UBN()
+        UBigNumber.multiply(x: UBN(lhs), y: rhs, result: &p)
         return p
     }
     
@@ -426,16 +385,6 @@ extension UBigNumber: Comparable, Equatable {
         var a = lhs
         a %= rhs
         return a
-    }
-    
-    // MARK: Modular Exponentiation (Operator Definitions)
-    
-    public static func ** (base: UBigNumber, power: UBigNumber) -> (base: UBigNumber, power: UBigNumber) {
-        (base: base, power: power)
-    }
-    
-    public static func % (lhs: (base: UBigNumber, power: UBigNumber), rhs: UBigNumber) -> UBigNumber {
-        return modExp(a: lhs.base, b: lhs.power, m: rhs)
     }
     
     // MARK: Private functions

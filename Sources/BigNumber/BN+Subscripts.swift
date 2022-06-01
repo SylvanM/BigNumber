@@ -2,7 +2,7 @@
 //  File.swift
 //  
 //
-//  Created by Sylvan Martin on 5/7/20.
+//  Created by Sylvan Martin on 5/31/22.
 //
 
 import Foundation
@@ -13,12 +13,12 @@ public extension BigNumber {
     
     /// References the word at the given index
     subscript (index: Int) -> UInt {
-        get { magnitude.words[index] }
-        set { magnitude.words[index] = newValue }
+        get { magnitude[index] }
+        set { magnitude[index] = newValue }
     }
     
-    /// Safely references the word at the given index
-    subscript (safe index: Int) -> UInt {
+    /// References the array value at the given index. If the index does not exist, it creates it or returns 0.
+    subscript (safe index: Int) -> WordType {
         get { magnitude[safe: index] }
         set { magnitude[safe: index] = newValue }
     }

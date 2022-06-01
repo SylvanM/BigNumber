@@ -2,24 +2,35 @@
 //  File.swift
 //  
 //
-//  Created by Sylvan Martin on 5/7/20.
+//  Created by Sylvan Martin on 5/31/22.
 //
 
 import Foundation
 
 public extension BigNumber {
     
-    // MARK: Sign Methods
-    
-    func signum() -> BigNumber {
-        BigNumber(self.sign)
-    }
-    
-    mutating func negate() {
-        self.sign = -self.sign
-    }
-    
     // MARK: Modulo Methods
+    
+    @discardableResult
+    static func extgcd(a: BigNumber, b: BigNumber, x: inout BigNumber, y: inout BigNumber) -> BigNumber {
+        
+        if a == 0 {
+            x = 0;
+            y = 1;
+            return b;
+        }
+        
+        var xp: BN = 0
+        var yp: BN = 0
+     
+        let gcd = extgcd(a: b % a, b: a, x: &xp, y: &yp)
+     
+        x = yp - (b / a) * xp
+        y = xp
+     
+        return gcd
+        
+    }
     
     /**
      * Computes `x` such that `x * self = 1 (mod m)` or returns garbage if `x` is not relatively prime to `m`
@@ -30,14 +41,14 @@ public extension BigNumber {
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
     func invMod(_ m: BigNumber) -> BigNumber {
-        
+
         var x: BigNumber = 0
         var y: BigNumber = 0
-        
+
         BigNumber.extgcd(a: self, b: m, x: &x, y: &y)
-        
+
         return x
-        
+
     }
     
     // MARK: Modular Exponentiation (Non-operator definitions)
@@ -53,25 +64,21 @@ public extension BigNumber {
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modExp(a: BigNumber, b: BigNumber, m: BigNumber) -> BigNumber {
-        
-        // in your code this is an instance method.
-        // Is it any better to have it an instance method rather than a static method?
-        
-        // also, is it any faster to have a separate method for powers of 2?
+    static func modexp(a: BigNumber, b: BigNumber, m: BigNumber, invPower: Bool = false) -> BigNumber {
         
         let bitSize = b.bitWidth
         var t: BN = a
         var x: BN = 1
         
-        if m.sign == -1 {
+        if invPower {
             t = a.invMod(m)
         }
-        #warning("Check this")
+        
         for i in (1...bitSize).reversed() {
-            x = (x * x) % m
+            let xm = x % m
+            x = (xm * xm) % m
             if b[bit: i-1] == 1 {
-                x = (x * t) % m
+                x = (xm * (t % m)) % m
             }
         }
         
@@ -82,7 +89,7 @@ public extension BigNumber {
     // MARK: - GCD Algorithms
     
     /**
-     * Returns the greatest common denominator of two `BigNumber`s including this one
+     * Returns the greatest common denominator of two `UBigNumber`s including this one
      *
      * - Parameters:
      *      - b: Another `UBN`
@@ -90,8 +97,6 @@ public extension BigNumber {
      * - Returns: `gcd(self, b)`
      */
     func gcd(_ b: BigNumber) -> BigNumber {
-        
-        #warning("Adapt this for signed stuff")
         
         if self == 0 {
             if b == 0 {
@@ -109,56 +114,6 @@ public extension BigNumber {
         }
         
         return b.gcd(self % b)
-        
-    }
-    
-    /**
-     * Extented Euclidean Algorithm
-     *
-     * Sets `x` and `y` such that
-     *
-     * `ax + by = gcd(a, b)`
-     */
-    static func extgcd(a: BigNumber, b: BigNumber, x: inout BigNumber, y: inout BigNumber) {
-        
-        #warning("Adapt this for signed stuff")
-        
-        var q = BN()
-        var r = BN()
-        
-        var xp = BN()
-        var yp = BN()
-        
-        if a == 0 {
-            if b == 0 {
-                fatalError("gcd(0, 0) is undefined")
-            }
-            y = 1
-            return
-        }
-        
-        if b == 0 {
-            x = 1
-            return
-        }
-        
-        if a == 1 {
-            x = 1
-            return
-        }
-        
-        if b == 1 {
-            y = 1
-            return
-        }
-        
-        divide(dividend: a, divisor: b, quotient: &q, remainder: &r)
-        extgcd(a: a, b: b, x: &xp, y: &yp)
-        
-        y = xp - (yp * q)
-        x = yp
-        
-        return
         
     }
     
@@ -181,7 +136,13 @@ public extension BigNumber {
      * - Returns: `true` if `n` is a probable prime
      */
     func isProbablePrime() -> Bool {
-        sign == 1 && magnitude.isProbablePrime()
+        
+        if sign == -1 {
+            return false
+        }
+        
+        return magnitude.isProbablePrime()
+        
     }
     
     /**
@@ -206,7 +167,7 @@ public extension BigNumber {
      * - Returns: Probable prime with `bytes` bytes
      */
     static func generateProbablePrime(bytes: Int) -> BigNumber {
-        BigNumber(UBigNumber.generateProbablePrime(bytes: bytes))
+        BN(UBigNumber.generateProbablePrime(bytes: bytes))
     }
     
 }

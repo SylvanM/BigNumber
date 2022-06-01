@@ -19,19 +19,8 @@ public extension UBigNumber {
      *
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
-    #warning("Add documentation explaning signness")
     func invMod(_ m: UBigNumber) -> UBigNumber {
-        
-        var x: BigNumber = 0
-        var y: BigNumber = 0
-        
-        let a = BigNumber(self)
-        let sm = BigNumber(m)
-        
-        BigNumber.extgcd(a: a, b: sm, x: &x, y: &y)
-        
-        return x.magnitude
-        
+        BN(sign: 1, magnitude: self).invMod((BN(m))).magnitude
     }
     
     // MARK: Modular Exponentiation (Non-operator definitions)
@@ -47,30 +36,8 @@ public extension UBigNumber {
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modExp(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
-        
-        // in your code this is an instance method.
-        // Is it any better to have it an instance method rather than a static method?
-        
-        // also, is it any faster to have a separate method for powers of 2?
-        
-        let bitSize = b.bitWidth
-        var t: UBN = a
-        var x: UBN = 1
-        
-        if invPower {
-            t = a.invMod(m)
-        }
-        
-        for i in (1...bitSize).reversed() {
-            x = (x * x) % m
-            if b[bit: i-1] == 1 {
-                x = (x * t) % m
-            }
-        }
-        
-        return x
-        
+    static func modexp(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
+        BN.modexp(a: BN(a), b: BN(b), m: BN(m), invPower: invPower).magnitude
     }
     
     // MARK: - GCD Algorithms
@@ -84,24 +51,7 @@ public extension UBigNumber {
      * - Returns: `gcd(self, b)`
      */
     func gcd(_ b: UBigNumber) -> UBigNumber {
-        
-        if self == 0 {
-            if b == 0 {
-                fatalError("gcd(0, 0) is undefined")
-            }
-            return b
-        }
-        
-        if b == 0 {
-            return self
-        }
-        
-        if self == 0 || b == 0 {
-            return 1
-        }
-        
-        return b.gcd(self % b)
-        
+        UBN(BN(self).gcd(BN(b)))
     }
     
     // MARK: Primality Tests
@@ -123,8 +73,6 @@ public extension UBigNumber {
      * - Returns: `true` if `n` is a probable prime
      */
     func isProbablePrime() -> Bool {
-        
-        var rand = self
         
         if self == 1 {
             return false
@@ -150,13 +98,14 @@ public extension UBigNumber {
         
         for _ in 0..<128 {
             
-            rand.setToRandom()
+            var rand: UBN
             
-            while rand == self {
-                rand = UBN(secureRandomBytes: sizeInBytes)
-            }
+            repeat {
+                rand = UBN.random(size: size)
+            } while rand == self
+                        
             
-            if UBN.modExp(a: rand, b: rand-1, m: self) != 1{
+            if UBN.modexp(a: rand, b: rand-1, m: self) != 1 {
                 return false
             }
             

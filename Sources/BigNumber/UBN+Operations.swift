@@ -19,7 +19,7 @@ public extension UBigNumber {
      *
      * - Returns: `true` if the numbers are numerically equivalent
      */
-    func equals(_ other: UBN) -> Bool {
+    func equals(_ other: UBigNumber) -> Bool {
         
         if other.size != self.size {
             return false
@@ -45,11 +45,11 @@ public extension UBigNumber {
      */
     func compare <T: BinaryInteger> (to other: T) -> Int {
         let otherUBN = UBN(other)
-        
+
         let sizeDifference = self.size - otherUBN.size
-        
+
         if sizeDifference != 0 { return sizeDifference }
-        
+
         // Compare most significant words
         for i in (0..<size).reversed() {
             if self[i] > otherUBN[i] {
@@ -59,60 +59,24 @@ public extension UBigNumber {
                 return -1
             }
         }
-        
+
         return 0
-        
+
     }
     
     // MARK: - Bitwise Operations
     
     @discardableResult
-    private mutating func applyWordwiseOp <T: BinaryInteger> (with other: T, operation: (inout WordType, WordType) -> ()) -> UBigNumber {
-        // I feel like there should be a much simpler and prettier way of doing this, but
-        // I need to make sure I don't run into any index out of range errors
+    private mutating func applyWordwiseOp <T: BinaryInteger> (with other: T, operation: (WordType, WordType) -> WordType) -> UBigNumber {
         
-        var i = 0
-        var otherIsSmaller: Bool = true
+        var otherWords = Words(other.words)
+        otherWords += [WordType](repeating: 0, count: size > otherWords.count ? size - otherWords.count : 0)
         
-        // I'm storing the other to a variable because using the .words property and subscript calls a getter method
-        // and I don't want to have to waste time calling that every single time
-        let otherWords = Words(other.words)
-        
-        let minSize: Int = {
-            if self.size <= other.words.count {
-                otherIsSmaller = false
-                return self.size
-            }
-            
-            return other.words.count
-        }()
-        
-        while i < minSize {
-            
-            operation(&self[i], otherWords[i])
-            
-            i += 1
+        for i in 0..<otherWords.count {
+            self[safe: i] = operation(self[safe: i], otherWords[i])
         }
         
-        if otherIsSmaller {
-            while i < self.size {
-                operation(&self[i], 0)
-                i += 1
-            }
-            normalize()
-            return self
-        }
-        
-        // gotta allocate new space
-        
-        self.words += Words(repeating: 0, count: otherWords.count - self.size)
-        
-        while i < self.size {
-            operation(&self[i], otherWords[i])
-        }
-        
-        normalize()
-        return self
+        return normalize()
     }
     
     /**
@@ -122,7 +86,7 @@ public extension UBigNumber {
      *      - other: another `BinaryInteger` to OR with this one
      */
     @discardableResult mutating func or <T: BinaryInteger> (with other: T) -> UBigNumber {
-        applyWordwiseOp(with: other, operation: |=)
+        applyWordwiseOp(with: other, operation: |)
     }
     
     /**
@@ -132,7 +96,7 @@ public extension UBigNumber {
      *      - other: another `UBigNumber` to AND with this one
      */
     @discardableResult mutating func and <T: BinaryInteger> (with other: T) -> UBigNumber {
-        applyWordwiseOp(with: other, operation: &=)
+        applyWordwiseOp(with: other, operation: &)
     }
     
     /**
@@ -142,7 +106,7 @@ public extension UBigNumber {
      *      - other: another `UBigNumber` to XOR with this one
      */
     @discardableResult mutating func xor <T: BinaryInteger> (with other: T) -> UBigNumber {
-        applyWordwiseOp(with: other, operation: ^=)
+        applyWordwiseOp(with: other, operation: ^)
     }
     
     /**
@@ -152,17 +116,17 @@ public extension UBigNumber {
      *      - shift: Amount by which to left shift this `UBigNumber`
      *      - handleOverflow: if `true`, this operation will append any necessary words to the `UInt` words of this `UBigNumber`
      */
-    @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T, withOverflowHandling handleOverflow: Bool = true) -> UBigNumber {
+    @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T) -> UBigNumber {
         
         if shift.signum() == -1 {
-            rightShift(by: shift * -1)
+            rightShift(by: shift.magnitude)
         }
         
-        let wordShift = Int(shift) / WordType.bitSize
-        let bitShift  = Int(shift) % WordType.bitSize
+        let wordShift = Int(shift) / WordType.bitWidth
+        let bitShift  = Int(shift) % WordType.bitWidth
         
-        if handleOverflow && wordShift != 0 {
-            words += Words(repeating: 0, count: Int(wordShift))
+        if wordShift != 0 {
+            words += Words(repeating: 0, count: wordShift + 1)
         }
         
         for i in (wordShift..<size).reversed() {
@@ -193,42 +157,28 @@ public extension UBigNumber {
     @discardableResult mutating func rightShift <T: BinaryInteger> (by shift: T) -> UBigNumber {
         
         if shift.signum() == -1 {
-            leftShift(by: shift * -1)
+            leftShift(by: shift.magnitude)
         }
         
-        let wordShift = Int(shift) / UInt.bitSize
-        let bitShift  = Int(shift) % UInt.bitSize
+        let wordShift = Int(shift) / WordType.bitWidth
+        let bitShift  = Int(shift) % WordType.bitWidth
         
         if wordShift >= size {
-            return 0
+            self = 0
+            return self
         }
         
-        for i in (wordShift..<size).reversed() {
-            words[i] = words[i - wordShift]
-        }
-        
-        for i in 0..<wordShift {
-            words[i] = 0
-        }
-        
-        for i in (1..<size).reversed() {
-            words[i] <<= bitShift
-            words[i] += words[i - 1] >> (UInt.bitSize - bitShift)
-        }
-    
-        words[0] <<= bitShift
-        
-        for i in 0..<(size - 1 - wordShift) {
+        for i in 0..<(size - wordShift) {
             words[i] = words[i + wordShift]
         }
         
-        for i in (size - 1 - wordShift)..<size {
+        for i in (size - wordShift)..<size {
             words[i] = 0
         }
         
         for i in 0..<(size - 1) {
             words[i] >>= bitShift
-            words[i] += words[i + 1] << (UInt.bitSize - bitShift)
+            words[i] += words[i + 1] << (WordType.bitWidth - bitShift)
         }
         words[size - 1] >>= bitShift
         
@@ -253,7 +203,7 @@ public extension UBigNumber {
         
         var carry: UInt
         
-        let size = handleOverflow ? Swift.max(self.size, b.size) + 1 : self.size
+        let size = handleOverflow ? Swift.max(self.size, b.size) + 1 : size
         
         if size > self.size {
             self.words += Words(repeating: 0, count: size - self.size)
@@ -272,6 +222,14 @@ public extension UBigNumber {
         
     }
     
+    @discardableResult
+    mutating func modadd(_ other: UBigNumber, m: UBigNumber) -> UBigNumber {
+        self %= m
+        self.add(other % m)
+        self %= m
+        return self
+    }
+    
     /// Subtracts a numerical value from this `UBN`
     /// - Parameter other: `BinaryInteger` to subtract
     /// - Returns: difference of `self` and `other`
@@ -286,6 +244,13 @@ public extension UBigNumber {
         return self.normalize()
     }
     
+    mutating func modsub(_ other: UBigNumber, m: UBigNumber) -> UBigNumber {
+        self %= m
+        self.subtract(other % m)
+        self %= m
+        return self
+    }
+    
     /**
      * Multiplies `x` by another `y` and stores the result in `result`
      *
@@ -295,7 +260,7 @@ public extension UBigNumber {
      *      - result: `UBigNumber` to store product of `x` and `y`
      *      - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      */
-    static func multiply <T: BinaryInteger> (x: T, by y: T, result: inout UBigNumber, withOverflowHandling handleOverflow: Bool = true) {
+    static func multiply <T: BinaryInteger> (x: T, y: T, result: inout UBigNumber) {
         
         let a = UBN(x)
         let b = UBN(y)
@@ -313,12 +278,12 @@ public extension UBigNumber {
         }
         
         if a == 1 {
-            result = b.normalized
+            result = b
             return
         }
         
         if b == 1 {
-            result = a.normalized
+            result = a
             return
         }
         
@@ -337,6 +302,11 @@ public extension UBigNumber {
         
         result.normalize()
         
+    }
+    
+    static func modmul(x: UBigNumber, y: UBigNumber, m: UBigNumber, result: inout UBigNumber) {
+        multiply(x: x % m, y: y % m, result: &result)
+        result %= UBN(m)
     }
     
     /**
@@ -392,7 +362,7 @@ public extension UBigNumber {
                 partialQuotient.leftShift(by: (remainder.size - b.size) * 64 + b.mostSignificantWord.leadingZeroBitCount - remainder.mostSignificantWord.leadingZeroBitCount)
             }
             
-            multiply(x: b, by: partialQuotient, result: &partialProduct)
+            multiply(x: b, y: partialQuotient, result: &partialProduct)
             
             while 1 == partialProduct.compare(to: remainder) {
                 
@@ -412,6 +382,13 @@ public extension UBigNumber {
             
         }
         
+    }
+    
+    func moddiv(by other: UBigNumber, m: UBigNumber) -> UBigNumber {
+        let invm = other.invMod(m)
+        var product = UBN()
+        UBN.modmul(x: self, y: invm, m: m, result: &product)
+        return product
     }
     
 }

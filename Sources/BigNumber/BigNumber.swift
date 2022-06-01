@@ -1,179 +1,171 @@
 //
-//  File.swift
+//  BigNumber.swift
 //  
 //
-//  Created by Sylvan Martin on 5/6/20.
+//  Created by Sylvan Martin on 5/31/22.
 //
 
 import Foundation
 
+/// A signed ```BigNumber``` object
 public typealias BN = BigNumber
 
 /**
- * A signed integer type of unfixed size
+ * A signed integer type of arbitrary size
  */
-public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByIntegerLiteral, SignedInteger, BinaryInteger, Hashable {
+public struct BigNumber: BNProtocol {
     
-    // MARK: - Typealiases
     
-    /// Words of a `BigNumber`
-    public typealias Words = UBigNumber.Words
     
-    /// The element type in array literal
-    public typealias ArrayLiteralElement = Words.Element
+    public typealias WordType = Magnitude.WordType
     
-    /// Integer literal type from which this type can be initialized
+    public typealias Words = Magnitude.Words
+    
+    public typealias StringLiteralType = Magnitude.StringLiteralType
+    
+    public typealias ArrayLiteralElement = Magnitude.ArrayLiteralElement
+    
+    public typealias FloatLiteralType = Magnitude.FloatLiteralType
+    
     public typealias IntegerLiteralType = Int
     
-    public typealias StringLiteralType = String
+    public typealias Magnitude = UBigNumber
     
-    // MARK: - Public Properties
+    // MARK: Properties
     
-    /// Sign of this `BigNumber`
-    ///
-    /// - `-1`: Negative
-    /// - `0`: Zero
-    /// - `1`: Positive
-    public var sign: Int = 0
+    public internal(set) var magnitude: UBigNumber
     
-    /// Unsigned magnitude of this value
-    public var magnitude: UBigNumber = 0
+    /**
+     * `-1` if this value is negative, `0` if this value is zero, `1` if this value is positive
+     */
+    public internal(set) var sign: Int
     
-    /// Whether or not this number is a power of two
-    public var isPowerOfTwo: Bool {
-        magnitude.isPowerOfTwo
-    }
-    
-    /// Whether or not this number represents 0
-    public var isZero: Bool {
-        magnitude.isZero
-    }
-    
-    /// Acesses the words of the magnitude of this `BigNumber`
-    #warning("Speed test this")
-    @inlinable public var words: UBigNumber.Words {
+    public var words: Magnitude.Words {
         get { magnitude.words }
         set { magnitude.words = newValue }
     }
     
-    /// Size of the words array
-    @inlinable public var size: Int {
-        magnitude.size
-    }
-    
-    /// The size, in bytes, of the integer represented by this `BN`
-    @inlinable public var sizeInBytes: Int {
-        magnitude.sizeInBytes
-    }
-    
-    /// Size of the integer represented by this `UBigNumber` in bits
-    @inlinable public var bitWidth: Int {
+    public var bitWidth: Int {
         magnitude.bitWidth
     }
     
-    /// The binary compliment of this `BigNumber`, ignoring the `sign`
-    public var binaryCompliment: BigNumber {
-        BigNumber( words.map { $0 } )
-    }
-
-    /// Amount of trailing zero bits
-    @inlinable public var trailingZeroBitCount: Int {
+    public var trailingZeroBitCount: Int {
         magnitude.trailingZeroBitCount
     }
     
-    /// Hex string representation of the `BN`
-    public var hexString: String {
-        (sign == -1 ? "-" : "") + magnitude.hexString
+    public var size: Int {
+        magnitude.size
     }
     
-    /// Binary string representation of this `BN`
-    public var binaryString: String {
-        (sign == -1 ? "-" : "") + magnitude.binaryString
+    public var negative: BN {
+        BN(sign: self.sign * -1, magnitude: self.magnitude)
     }
     
-    /// Hex description of the BN when being printed
-    public var description: String {
-        (sign == -1 ? "-" : "") + magnitude.description
+    public var binaryCompliment: BN {
+        BN(sign: sign, magnitude: magnitude.binaryCompliment)
     }
     
-    /// `true` if the least significant bit is `1`
-    @inlinable public var leastSignificantBitIsSet: Bool {
+    public var isZero: Bool {
+        sign == 0
+    }
+    
+    var isPowerOfTwo: Bool {
+        sign == 1 && magnitude.isPowerOfTwo
+    }
+    
+    var sizeInBytes: Int {
+        magnitude.sizeInBytes + MemoryLayout<Int>.size
+    }
+    
+    var hexString: String {
+        (sign == -1 ? "-1" : "") + magnitude.hexString
+    }
+    
+    var leastSignificantBitIsSet: Bool {
         magnitude.leastSignificantBitIsSet
     }
     
-    /// Acesses the most significant word of this `BN`
-    @inlinable public var mostSignificantWord: UInt {
+    var mostSignificantWord: Magnitude.WordType {
         get { magnitude.mostSignificantWord }
         set { magnitude.mostSignificantWord = newValue }
     }
     
-    /// Acesses the least significant word of this `BN`
-    @inlinable public var leastSignificantWord: UInt {
+    var leastSignificantWord: Magnitude.WordType {
         get { magnitude.leastSignificantWord }
         set { magnitude.leastSignificantWord = newValue }
     }
     
-    /// Returns the index of the most significant set bit
-    ///
-    /// **Note:** If this `BN` is equivalent to `0`, this will return `-1`
-    @inlinable public var mostSignificantSetBitIndex: Int {
+    var mostSignificantSetBitIndex: Int {
         magnitude.mostSignificantSetBitIndex
     }
     
-    /// Whether or not the array representation of this `BN` is normal
-    ///
-    /// "Normal" means that it is not using excess memory
-    @inlinable public var isNormal: Bool {
-        magnitude.isNormal
+    var isNormal: Bool {
+        magnitude.isNormal && ((sign == 0) == (words == [0]))
     }
     
-    /// The normalized version of this `BN`
-    public var normalized: BigNumber {
-        var norm = self
-        return norm.normalize()
-    }
-    
-    /// The number of nonzero buts in the binary representation of this `BN`
-    @inlinable public var nonzeroBitCount: Int {
-        magnitude.nonzeroBitCount
-    }
-    
-    /// The negative of this `BN`
-    public var negative: BigNumber {
-        var neg = self
-        neg.sign *= -1
-        return neg
+    var nonzeroBitCount: Int {
+        magnitude.nonzeroBitCount + sign.nonzeroBitCount
     }
     
     // MARK: Initializers
     
-    /// Default initializer, creating a `BigNumber` with a value of `0`
-    public init() {
-        // do nothing
+    public init(_ magnitude: UBN) {
+        self.init(sign: 1, magnitude: magnitude)
     }
     
-    /// Creates a `BN` from a `UBN`
-    public init(_ ubn: UBigNumber) {
-        self.magnitude = ubn
-        if ubn > 0 {
-            self.sign = 1
+    public init(sign: Int, magnitude: UBN) {
+        self.magnitude = magnitude
+        self.sign = sign
+    }
+    
+    public init(arrayLiteral elements: Magnitude.ArrayLiteralElement...) {
+        self.magnitude = UBN(array: elements)
+        self.sign = magnitude.isZero ? 0 : 1
+    }
+    
+    public init(integerLiteral value: Int) {
+        self.magnitude = UBN(integerLiteral: value.magnitude)
+        self.sign = value.signum()
+    }
+    
+    public init(floatLiteral value: Magnitude.FloatLiteralType) {
+        self.init(exactly: value)!
+    }
+    
+    public init(stringLiteral value: Magnitude.StringLiteralType) {
+        var fixedString = value
+        
+        if let firstCharacter = fixedString.first, firstCharacter == "-" {
+            sign = -1
+            fixedString = String(value.dropFirst())
+        } else {
+            sign = 1
         }
+        
+        self.magnitude = UBN(stringLiteral: fixedString)
+        if magnitude.isZero { self.sign = 0 }
     }
     
     public init?<T>(exactly source: T) where T : BinaryFloatingPoint {
-        
-        self.magnitude = UBN(exactly: source.magnitude)!
-        self.sign = source.sign.rawValue
-        
+        self.magnitude = UBN(floatLiteral: source.magnitude)
+        self.sign = source.sign == .minus ? -1 : 1
+        if self.magnitude == 0 {
+            self.sign = 0
+        }
     }
     
     public init<T>(_ source: T) where T : BinaryFloatingPoint {
-        self.magnitude = UBN(source.magnitude)
-        self.sign = source.sign.rawValue
+        self.init(exactly: source)!
     }
     
-    public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
-        self.magnitude = UBN(truncatingIfNeeded: source.magnitude)
+    public init<T>(_ source: T) where T : BinaryInteger {
+        self.magnitude = UBN(source.magnitude)
+        self.sign = Int(source.signum())
+    }
+    
+    public init?<T>(exactly source: T) where T : BinaryInteger {
+        guard let mag = UBN(exactly: source.magnitude) else { return nil }
+        self.magnitude = mag
         self.sign = Int(source.signum())
     }
     
@@ -182,65 +174,9 @@ public struct BigNumber: CustomStringConvertible, ExpressibleByStringLiteral, Ex
         self.sign = Int(source.signum())
     }
     
-    public init<T>(truncatingBits source: T) where T : BinaryInteger {
-        self.magnitude = UBN(truncatingBits: source.magnitude)
-        self.sign = Int(source.signum())
-    }
-    
-    public init?<T>(exactly source: T) where T : BinaryInteger {
+    public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
         self.magnitude = UBN(exactly: source.magnitude)!
         self.sign = Int(source.signum())
     }
     
-    public init<T>(_ source: T) where T : BinaryInteger {
-        self.magnitude = UBN(source.magnitude)
-        self.sign = Int(source.signum())
-    }
-    
-    public init(integerLiteral value: Int) {
-        self.magnitude = UBigNumber(value.magnitude)
-        self.sign = value.signum()
-    }
-    
-    public init(arrayLiteral elements: UInt...) {
-        self.magnitude = UBN(elements)
-        self.sign = self.isZero ? 0 : 1
-    }
-    
-    public init(stringLiteral hex: String) {
-        if hex == "" { return }
-        let stringIsNegative = hex.first! == "-"
-        let string = stringIsNegative ? String(hex.dropFirst()) : hex
-        self.magnitude = UBN(stringLiteral: string)
-        self.sign = self.isZero ? 0 : (stringIsNegative ? -1 : 1)
-    }
-    
-    public init(size: Int) {
-        self.magnitude = UBN(size: size)
-    }
-    
-    public init <T: BinaryInteger>(_ array: [T], bigEndian: Bool = false) {
-        self.magnitude = UBN(array, bigEndian: bigEndian)
-        self.sign = self.isZero ? 0 : 1
-    }
-    
-    public init?(_ integer: Int) {
-        self.magnitude = UBN(integer.magnitude)
-        self.sign = integer.signum()
-    }
-    
-    public init(randomBytes: Int, generator: SecRandomRef? = kSecRandomDefault) {
-        
-        self.magnitude = UBN(secureRandomBytes: randomBytes, generator: generator)
-        self.sign = self.isZero ? 0 : [-1, 1].randomElement()!
-    
-    }
-    
-    public init(data: Data) {
-        
-        self.magnitude = UBN(data: data)
-        self.sign = self.isZero ? 0 : 1
-        
-    }
-
 }
