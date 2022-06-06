@@ -57,8 +57,6 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     func invMod(_ m: Self) -> Self
     
-    static func modexp(a: Self, b: Self, m: Self, invPower: Bool) -> Self
-    
     func gcd(_ b: Self) -> Self
     
     // MARK: Primality Tests
@@ -71,35 +69,35 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     func equals(_ other: Self) -> Bool
     
-    func compare <T : BinaryInteger> (to other: T) -> Int
+    func compare(to other: Self) -> Int
     
     // MARK: Bitwise Operations
     
-    @discardableResult mutating func or <T : BinaryInteger> (with other: T) -> Self
+    @discardableResult mutating func or (with other: Self) -> Self
     
-    @discardableResult mutating func and <T : BinaryInteger> (with other: T) -> Self
+    @discardableResult mutating func and (with other: Self) -> Self
     
-    @discardableResult mutating func xor <T : BinaryInteger> (with other: T) -> Self
+    @discardableResult mutating func xor (with other: Self) -> Self
     
-    @discardableResult mutating func leftShift <T : BinaryInteger> (by other: T) -> Self
+    @discardableResult mutating func leftShift (by other: Self) -> Self
     
-    @discardableResult mutating func rightShift <T : BinaryInteger> (by other: T) -> Self
+    @discardableResult mutating func rightShift (by other: Self) -> Self
     
     // MARK: Arithmetic Operations
     
-    @discardableResult mutating func add <T : BinaryInteger> (_ other: T, withOverflowHandling: Bool) -> Self
+    @discardableResult mutating func add (_ other: Self, withOverflowHandling: Bool) -> Self
     
     @discardableResult mutating func modadd (_ other: Self, m: Self) -> Self
 
     @discardableResult mutating func modsub (_ other: Self, m: Self) -> Self
     
-    @discardableResult mutating func subtract <T : BinaryInteger> (_ other: T) -> Self
+    @discardableResult mutating func subtract (_ other: Self) -> Self
     
-    static func multiply <T : BinaryInteger> (x: T, y: T, result: inout Self)
+    static func multiply (x: Self, y: Self, result: inout Self)
     
     static func modmul (x: Self, y: Self, m: Self, result: inout Self)
     
-    static func divide <T : BinaryInteger> (dividend: T, divisor: T, quotient: inout Self, remainder: inout Self)
+    static func divide (dividend: Self, divisor: Self, quotient: inout Self, remainder: inout Self)
     
     func moddiv (by other: Self, m: Self) -> Self
     
@@ -183,6 +181,10 @@ internal protocol UBNProtocol: RawBNProtocol, UnsignedInteger {
     
     init(data: Data)
     
+    // MARK: Methods
+    
+    static func modexp(a: Self, b: Self, m: Self, invPower: Bool) -> Self
+    
 }
 
 internal protocol BNProtocol: RawBNProtocol, SignedInteger {
@@ -199,6 +201,8 @@ internal protocol BNProtocol: RawBNProtocol, SignedInteger {
     
     mutating func set(sign: Int) -> Self
     
+    static func modexp(a: Self, b: Self, m: Self) -> Self
     
+    static prefix func - (x: Self) -> Self
     
 }

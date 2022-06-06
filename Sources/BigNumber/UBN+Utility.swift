@@ -24,11 +24,7 @@ public extension UBigNumber {
             return self
         }
         
-        var lastWord: WordType {
-            words[size - 1]
-        }
-    
-        while lastWord == 0 && size > 1 {
+        while mostSignificantWord == 0 && size > 1 {
             words.removeLast()
         }
         

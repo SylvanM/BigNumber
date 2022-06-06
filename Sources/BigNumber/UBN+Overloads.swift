@@ -369,9 +369,10 @@ extension UBigNumber: Comparable, Equatable {
     ///
     /// - Returns: Product of ```lhs``` and ```rhs```
     public static func / (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        var a = lhs
-        a /= rhs
-        return a
+        var q = UBN()
+        var r = UBN()
+        UBN.divide(dividend: lhs, divisor: rhs, quotient: &q, remainder: &r)
+        return q
     }
     
     /// Modulo operation for two ```BigNumber```'s
@@ -382,9 +383,10 @@ extension UBigNumber: Comparable, Equatable {
     ///
     /// - Returns: ```lhs``` modulo ```rhs```
     public static func % (lhs: UBigNumber, rhs: UBigNumber) -> UBigNumber {
-        var a = lhs
-        a %= rhs
-        return a
+        var q = UBN()
+        var r = UBN()
+        UBN.divide(dividend: lhs, divisor: rhs, quotient: &q, remainder: &r)
+        return r
     }
     
     // MARK: Private functions

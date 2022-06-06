@@ -56,7 +56,16 @@ public extension BigNumber {
         // randomize the sign
         _ = SecRandomCopyBytes(generator, 1, &randomSign)
         
-        return BN(sign: randomSign[0] % 2, magnitude: randomMag)
+        randomSign[0] %= 2
+        randomSign[0] *= 2
+        randomSign[0] -= 1
+        
+        var random = BN()
+        
+        random.sign = randomSign[0]
+        random.magnitude = randomMag
+        
+        return random
         
     }
     
@@ -65,6 +74,10 @@ public extension BigNumber {
         self.sign = 0
         self.magnitude.setToZero()
         return self
+    }
+    
+    func signum() -> BigNumber {
+        BN(sign)
     }
     
     @discardableResult

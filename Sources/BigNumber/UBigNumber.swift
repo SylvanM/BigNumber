@@ -36,7 +36,7 @@ public struct UBigNumber: UBNProtocol {
     
     /// Whether or not this number is a power of two
     public var isPowerOfTwo: Bool {
-        self != 0 && (self & (self - 1) == 0)
+        self.nonzeroBitCount == 1
     }
     
     /// Whether or not this number represents 0
@@ -156,7 +156,7 @@ public struct UBigNumber: UBNProtocol {
     
     /// Number of nonzero bits in the binary representation of this `UBN`
     public var nonzeroBitCount: Int {
-        words.map { $0.nonzeroBitCount }.reduce(0, +) // Look at this cool swift feature! I've been actually reading Apple's documentation.
+        words.map { $0.nonzeroBitCount }.reduce(0, +)
     }
     
     // MARK: Private Properties
@@ -182,6 +182,10 @@ public struct UBigNumber: UBNProtocol {
     /// - Returns: The `UBN` representation of the integer value of `source` if `source > 0`. If not, this returns `nil`
     public init?<T>(exactly source: T) where T : BinaryFloatingPoint {
         
+        #warning("This does not work")
+        
+        guard source.isFinite else { return nil }
+        
         if source < 0 {
             return nil
         }
@@ -192,30 +196,10 @@ public struct UBigNumber: UBNProtocol {
             return
         }
         
-        if source <= T(UInt.max) {
-            self.words = [UInt(source)]
-            return
-        }
-        
         let division = Int(source.exponent + 1).quotientAndRemainder(dividingBy: UInt.bitSize)
         let arraySize = division.quotient + (division.remainder != 0 ? 1 : 0)
         self.words = Words(repeating: 0, count: Int(arraySize))
-
-        // I just need to get this working first
-
-        /*
-         * Visualization of what I'm trying to do:
-         * (with 8 bit words instead of 64 bit so it's easier to visualize)
-         *
-         *    |<------->|  <- significand bit pattern (with a bit width of 10) (in practice, we will (probably) never get a bit width greater than the word size, so a bit width of 10 is a bad example)
-         *          |<->|  <- lo bits
-         *    |<->|        <- hi bits (the bits above the boundary between words)
-         * 00010010|10001000|00000000|00000000|00000000|00000000|00000000
-         *    |<--------------------------------------------------------- <- the exponent of the floating point
-         *
-         */
-
-
+        
         let hiBitCount = Int(source.exponent + 1) % UInt.bitSize
         let loBitCount = (T.significandBitCount + 1) - hiBitCount
 
@@ -313,6 +297,13 @@ public struct UBigNumber: UBNProtocol {
         self.init(value)
     }
     
+    public init(floatLiteral value: FloatLiteralType) {
+        
+        assert(value.isFinite, "value must be finite")
+        
+        self.init(exactly: value)!
+    }
+    
     /// Creates a ```UBN``` from an array literal
     ///
     /// - Parameters:
@@ -368,7 +359,7 @@ public struct UBigNumber: UBNProtocol {
     /// - Parameters:
     ///     - array: The array object
     ///     - bigEndian: `true` if the input array is in the Big Endian format. The default is `false`
-    public init <T: BinaryInteger>(_ array: [T], bigEndian: Bool = false) {
+    public init <T: BinaryInteger> (_ array: [T], bigEndian: Bool = false) {
         
         let typeSize = MemoryLayout<T>.size
         

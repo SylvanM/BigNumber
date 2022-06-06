@@ -37,7 +37,7 @@ public extension UBigNumber {
      * - Returns: ```a ^ b mod c```
      */
     static func modexp(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
-        BN.modexp(a: BN(a), b: BN(b), m: BN(m), invPower: invPower).magnitude
+        BN.modexp(a: BN(a), b: BN(b), m: BN(sign: invPower ? -1 : 1, magnitude: m)).magnitude
     }
     
     // MARK: - GCD Algorithms

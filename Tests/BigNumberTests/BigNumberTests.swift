@@ -24,6 +24,30 @@ final class BigNumberTests: XCTestCase {
     
     func testSignedComparisons() {
         
+        for _ in 0...255 {
+            var a = BN.random(size: 4)
+            var b = BN.random(size: 4)
+            
+            a.set(sign: -1)
+            b.set(sign: 1)
+            
+            XCTAssertTrue(a < b)
+            XCTAssertTrue(b > a)
+            XCTAssertTrue(a <= b)
+            XCTAssertTrue(b >= a)
+            
+            a.set(sign: 1)
+            
+            let unsignedcmp = a.magnitude.compare(to: b.magnitude)
+            
+            XCTAssertEqual(unsignedcmp, a.compare(to: b))
+            
+            a.set(sign: -1)
+            b.set(sign: -1)
+            
+            XCTAssertEqual(unsignedcmp * -1, a.compare(to: b))
+        }
+        
     }
     
     /**
@@ -65,6 +89,32 @@ final class BigNumberTests: XCTestCase {
     }
 
     // MARK: Initializer Tests
+    
+    func testSignedInitializers() {
+        
+        var a: BN = -1134
+        
+        XCTAssertEqual(a.magnitude, 1134)
+        XCTAssertEqual(a.sign, -1)
+        XCTAssertTrue(a.isNormal)
+        
+        a = 0
+        
+        XCTAssertEqual(a.magnitude, 0)
+        XCTAssertEqual(a.sign, 0)
+        XCTAssertTrue(a.isNormal)
+        
+        a = "-9aa3aefe509eb84b19084a2954842c9b7694707b82efd3c1c68e13fbb10e40f4c1cb16845fdda9494fbe27e58f488570"
+        
+        XCTAssertEqual(a.magnitude, "9aa3aefe509eb84b19084a2954842c9b7694707b82efd3c1c68e13fbb10e40f4c1cb16845fdda9494fbe27e58f488570")
+        XCTAssertEqual(a.sign, -1)
+        XCTAssertTrue(a.isNormal)
+        
+        let b: BN = [2]
+        
+        XCTAssertEqual(b.sign, 1)
+        
+    }
 
     /**
      * Initializer tests
@@ -231,223 +281,81 @@ final class BigNumberTests: XCTestCase {
 
     }
 
-    // MARK: Subscript Testing
-
-    /**
-     * Subscript tests
-     */
-    func testUnsignedSubscripts() {
-
-        // tests the safe subscript
-
-        var ubn: UBN = 0
-        ubn[safe: 8] = 1
-        XCTAssertEqual(ubn.words, [0, 0, 0, 0, 0, 0, 0, 0, 1])
-
-        ubn = [13471348, 9921369, 118891239923, 238, 1023]
-        ubn[safe: 5] = 2341234
-        XCTAssertEqual(ubn.words, [13471348, 9921369, 118891239923, 238, 1023, 2341234])
-
-        // test the bit subscript
-
-        // test the "8" bit (so the 4th bit from 0)
-        var number = UBN(secureRandomBytes: Int.random(in: 1...5))
-        number |= 8
-        XCTAssertTrue(number[bit: 3] == 1)
-
-        // generate random power of 2 to test
-        let bitIndex = Int.random(in: 0...UInt.bitSize)
-        let powOfTwo = 1 << bitIndex
-        number = UBN(powOfTwo)
-        XCTAssertTrue(number[bit: bitIndex] == 1)
-        XCTAssertTrue(number[bit: bitIndex + 1] == 0)
-
-        // do performance tests on subscripts so we can find the fastest way to do each one
-
-        self.measure {
-            
-        }
-
-    }
-
-    // MARK: Bit Manipulation Testing
-
-    /**
-     * Tests subscripts and methods for bit manipulation
-     */
-    func testUnsignedBitManipulators() {
-
-        var x = UBN()
-        let y: UBN = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"
-
-        XCTAssertTrue(x.isNormal)
-
-        x[bit: 0] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 0] == 1 && x.bitWidth == 1)
-
-        x[bit: 0] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 0] == 0 && x.bitWidth == 0)
-
-        x[bit: 63] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 63] == 1 && x.bitWidth == 64)
-
-        x[bit: 63] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 63] == 0 && x.bitWidth == 0)
-
-        x[bit: 64] = 1
-        XCTAssertTrue(x.isNormal)
-        XCTAssertTrue(x[bit: 64] == 1)
-        XCTAssertTrue(x.bitWidth == 65)
-
-        x[bit: 64] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 64] == 0 && x.bitWidth == 0)
-
-        x[bit: 256] = 0
-        XCTAssertTrue(x.isNormal && x.isZero)
-
-        x[bit: 256] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 256] == 1 && x.bitWidth == 257)
-
-        x[bit: 256] = 0
-        XCTAssertTrue(x.isNormal && x.isZero)
-
-        x.normalize()
-        XCTAssertTrue(x.isNormal && x.isZero)
-
-        for i in 0..<255 {
-            x[bit: i] = 1
-        }
-
-        x[bit: 0] = 0
-        x[bit: 4] = 0
-
-        XCTAssertEqual(x, y)
-    }
-
-    // MARK: Bitwise Shift Testing
-
-    /**
-     * Bit shifting!
-     */
-    func testUnsignedBitwiseShifting() {
-
-        var x = UBN()
-        let y: UBN = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"
-        let z: UBN = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-        x[bit: 0] = 1
-        x <<= 255
-        x -= 19
-        XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x, y) // XCTAssertEqual failed: ("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFED") is not equal to ("0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED")
-
-        x >>= 255
-        XCTAssertTrue(x.isNormal)
-        XCTAssertTrue(x.isZero)
-        x.normalize()
-        x[bit: 0] = 1
-        x <<= 256
-        x -= 1
-        XCTAssertTrue(x.words.allSatisfy { $0 == UInt.max } )
-
-        XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x.bitWidth, 256)
-
-        x = z << 129
-        XCTAssertEqual(x, "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000")
-
-        for i in 0...129 {
-            XCTAssertFalse(x[bit: i] == 1)
-        }
-
-        XCTAssertTrue(x.isNormal)
-
-        x >>= 380
-        XCTAssertTrue(x.isNormal)
-        XCTAssertEqual(x, 0x15)
-
-        x >>= 73
-        XCTAssertTrue(x.isNormal)
-        XCTAssertTrue(x.isZero)
-        XCTAssertEqual(x.bitWidth, 0)
-
-    }
-
-    // MARK: Bitwise Operator Testing
-
-    /**
-     * Bitwise operator testing
-     *
-     * Tests:
-     * - AND
-     * - OR
-     * - XOR
-     */
-    func testBitwiseLogicalOperators() {
-
-        let x: UBN = "aaaaaaaaaaaaaaaa6666666666666666aaaaaaaaaaaaaaaa6666666666666666"
-        var y: UBN = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
-
-        var correctAnd: UBN = "a0a0a0a0a0a0a0a06060606060606060a0a0a0a0a0a0a0a06060606060606060"
-        var result = x & y
-        XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctAnd, "AND Failed")
-
-        var correctOr: UBN = "fafafafafafafafaf6f6f6f6f6f6f6f6fafafafafafafafaf6f6f6f6f6f6f6f6"
-        result = x | y
-        XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctOr, "OR Failed")
-
-        var correctXor: UBN = "5a5a5a5a5a5a5a5a96969696969696965a5a5a5a5a5a5a5a9696969696969696"
-        result = x ^ y
-        XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctXor, "XOR Failed")
-        
-        // test with unequal lengths
-
-        y.rightShift(by: 64)
-
-        correctAnd = "6060606060606060a0a0a0a0a0a0a0a06060606060606060"
-        result = x & y
-        XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctAnd, "AND with unequal lengths failed")
-        
-        correctOr = "aaaaaaaaaaaaaaaaf6f6f6f6f6f6f6f6fafafafafafafafaf6f6f6f6f6f6f6f6"
-        result = x | y
-        XCTAssertTrue(result.isNormal)
-        XCTAssertEqual(result, correctOr, "OR with unequal lengths failed")
     
-        correctXor = "aaaaaaaaaaaaaaaa96969696969696965a5a5a5a5a5a5a5a9696969696969696"
-        result = x ^ y
-        XCTAssertTrue(result.isNormal) // XCTAssertTrue failed
-        XCTAssertEqual(result, correctXor, "XOR with unequal lengths failed")
-        
-    }
-
     // MARK: Test addition and subtraction
     
-    func testUnsignedAdditionMultiplicationSymmetry() {
+    func testSignedMultiplication() {
         
-        for i in 1...256 {
-            
-            let a = UBN.random(size: i)
-            
-            var accumulator: UBN = 0
-            
-            let scalar = Int.random(in: 0...100)
-            
-            for _ in 0..<scalar {
-                accumulator.add(a)
-            }
-            
-            XCTAssertEqual(accumulator, scalar * a, "Repeated addition and multiplication are the same")
-        }
+        let a: BN = "F7CD5267A01FC10A"
+        
+        XCTAssertEqual(a + a, 2 * a)
         
     }
     
     func testSignedAdditionAndSubtraction() {
         
+        measure {
+            for _ in 0...255 {
+                
+                var a = BN.random(size: 1)
+                let b = a
+                
+                a.add(a)
+                
+                XCTAssertEqual(a.sign, b.sign)
+                XCTAssertEqual(a, b + b)
+                
+                XCTAssertEqual((b + b).sign, (2 * b).sign)
+                XCTAssertEqual((b + b).sign, b.sign)
+                XCTAssertEqual((2 * b).sign, b.sign)
+                
+                XCTAssertEqual(a, b * 2)
+                
+                XCTAssertEqual(a + a, 2 * a)
+
+                XCTAssertEqual(-a, a.negative)
+                XCTAssertEqual(-a, a - (2 * a))
+                
+            }
+        }
         
+    }
+    
+    // MARK: Test Methods
+    
+    func testSignedModuloOperator() {
+       
+        for _ in 0...255 {
+            
+            let a = BN.random(size: 3) * 2
+            
+            XCTAssertEqual(a % 2, 0)
+            
+        }
+        
+    }
+    
+    
+    
+    func testModularMethods() {
+        
+        let a: BN = 1398
+        let b: BN = 324
+        
+        var x = BN()
+        var y = BN()
+        
+        let gcd = BN.extgcd(a: a, b: b, x: &x, y: &y)
+        
+        XCTAssertEqual(gcd, 6)
+        XCTAssertEqual(x, -19)
+        XCTAssertEqual(y, 82)
+        
+        XCTAssertEqual(a.gcd(b), b.gcd(a))
+        XCTAssertEqual(a.gcd(b), gcd)
+        
+        XCTAssertEqual(a * x + b * y, gcd)
+        XCTAssertEqual(a * -19 + b * 82, 6)
         
     }
     

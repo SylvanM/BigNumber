@@ -14,19 +14,37 @@ public extension BigNumber {
     @discardableResult
     static func extgcd(a: BigNumber, b: BigNumber, x: inout BigNumber, y: inout BigNumber) -> BigNumber {
         
+        x = 0
+        y = 0
+        
         if a == 0 {
-            x = 0;
-            y = 1;
-            return b;
+            
+            assert(!b.isZero, "gcd(0, 0) is undefined")
+            
+            y = 1
+            
+            y.sign = b.sign
+            return b
+        }
+        
+        if b.isZero {
+            x = 1
+            x.sign = a.sign
+            return a
         }
         
         var xp: BN = 0
         var yp: BN = 0
+        
+        var q = BN()
+        var r = BN()
+        
+        BN.divide(dividend: a, divisor: b, quotient: &q, remainder: &r)
      
-        let gcd = extgcd(a: b % a, b: a, x: &xp, y: &yp)
+        let gcd = extgcd(a: b, b: r, x: &xp, y: &yp)
      
-        x = yp - (b / a) * xp
-        y = xp
+        y = xp - (yp * q)
+        x = yp
      
         return gcd
         
@@ -60,18 +78,17 @@ public extension BigNumber {
      *      - a: Base
      *      - b: Exponent
      *      - m: Modulo
-     *      - invPower: `Bool` indicating whether the exponent `b` should be treated as a negative exponent even though it is unsigned
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modexp(a: BigNumber, b: BigNumber, m: BigNumber, invPower: Bool = false) -> BigNumber {
+    static func modexp(a: BigNumber, b: BigNumber, m: BigNumber) -> BigNumber {
         
         let bitSize = b.bitWidth
         var t: BN = a
         var x: BN = 1
         
-        if invPower {
-            t = a.invMod(m)
+        if m.sign == -1 {
+            t = a.invMod(-m)
         }
         
         for i in (1...bitSize).reversed() {

@@ -29,12 +29,10 @@ public extension BigNumber {
      *
      * - Returns: a positive integer if `self` is greater than `other`, a negative integer if `self` is less than `other`, and `0` if `self` is equal to `other`
      */
-    func compare <T: BinaryInteger> (to other: T) -> Int {
+    func compare (to other: BigNumber) -> Int {
         
-        let signComparison = self.sign - Int(other.signum())
-        
-        if signComparison != 0 {
-            return signComparison
+        if self.sign != other.sign {
+            return sign - other.sign
         }
         
         let magnitudeComparison = magnitude.compare(to: other.magnitude)
@@ -51,7 +49,7 @@ public extension BigNumber {
      * - Parameters:
      *      - other: another `BinaryInteger` to OR with this one
      */
-    @discardableResult mutating func or <T: BinaryInteger> (with other: T) -> BigNumber {
+    @discardableResult mutating func or (with other: BigNumber) -> BigNumber {
         magnitude.or(with: other)
         return self
     }
@@ -62,7 +60,7 @@ public extension BigNumber {
      * - Parameters:
      *      - other: another `UBigNumber` to AND with this one
      */
-    @discardableResult mutating func and <T: BinaryInteger> (with other: T) -> BigNumber {
+    @discardableResult mutating func and (with other: BigNumber) -> BigNumber {
         magnitude.and(with: other)
         return self
     }
@@ -73,7 +71,7 @@ public extension BigNumber {
      * - Parameters:
      *      - other: another `UBigNumber` to XOR with this one
      */
-    @discardableResult mutating func xor <T: BinaryInteger> (with other: T) -> BigNumber {
+    @discardableResult mutating func xor (with other: BigNumber) -> BigNumber {
         magnitude.xor(with: other)
         return self
     }
@@ -84,7 +82,7 @@ public extension BigNumber {
      * - Parameters:
      *      - shift: Amount by which to left shift this `UBigNumber`
      */
-    @discardableResult mutating func leftShift <T: BinaryInteger> (by shift: T) -> BigNumber {
+    @discardableResult mutating func leftShift (by shift: BigNumber) -> BigNumber {
         magnitude.leftShift(by: shift)
         return self
     }
@@ -95,7 +93,7 @@ public extension BigNumber {
      * - Parameters:
      *   - shift: Amount by which to left shift this `BigNumber`
      */
-    @discardableResult mutating func rightShift <T: BinaryInteger> (by shift: T) -> BigNumber {
+    @discardableResult mutating func rightShift (by shift: BigNumber) -> BigNumber {
         magnitude.rightShift(by: shift)
         return self
     }
@@ -103,31 +101,37 @@ public extension BigNumber {
     // MARK: Arithmetic Operations
     
     /**
-     * Adds another `BinaryInteger` to this `UBigNumber`
+     * Adds another `BinaryInteger` to this `BigNumber`
      *
      * - Parameters:
-     *   - other: A `BinaryInteger` to add to this `UBigNumber`
-     *   - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
+     *   - other: A `BinaryInteger` to add to this `BigNumber`
+     *   - handleOverflow: if `true`, this operation will append any necessary words to this `BigNumber`
      *
      * - Returns: Sum of `self` and `other`
      */
-    @discardableResult mutating func add <T: BinaryInteger> (_ other: T, withOverflowHandling handleOverflow: Bool = true) -> BigNumber {
-        var otherBN = BN(other)
+    @discardableResult mutating func add (_ other: BigNumber, withOverflowHandling handleOverflow: Bool = true) -> BigNumber {
         
-        if self.sign == otherBN.sign {
-            return self.add(otherBN)
+        if self.sign == other.sign {
+            self.magnitude.add(other.magnitude)
+            return self
         }
         
         if self.sign == 0 {
-            self = otherBN
+            self.magnitude = other.magnitude
+            self.sign = other.sign
         }
         
         if self.sign == 1 {
-            return self.subtract(otherBN.negative)
+            return self.subtract(other.negative)
         }
         
-        // sign is -1
-        self = otherBN.subtract(self.negative)
+        let negSelf = self.negative
+        
+        self.magnitude = other.magnitude
+        self.sign = other.sign
+        
+        self.subtract(negSelf)
+        
         return self
         
     }
@@ -143,7 +147,7 @@ public extension BigNumber {
     /// Subtracts a numerical value from this `UBN`
     /// - Parameter other: `BinaryInteger` to subtract
     /// - Returns: difference of `self` and `other`
-    @discardableResult mutating func subtract <T: BinaryInteger> (_ other: T) -> BigNumber {
+    @discardableResult mutating func subtract (_ other: BigNumber) -> BigNumber {
         
         var otherBN = BN(other)
         
@@ -203,15 +207,17 @@ public extension BigNumber {
      *      - result: `UBigNumber` to store product of `x` and `y`
      *      - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      */
-    static func multiply <T: BinaryInteger> (x: T, y: T, result: inout BigNumber) {
+    static func multiply (x: BigNumber, y: BigNumber, result: inout BigNumber) {
         
-        if x.signum() == y.signum() {
+        if x.sign == y.sign {
             result.sign = 1
+        } else {
+            result.sign = -1
         }
-        
-        result.sign = -1
-        
+            
         UBN.multiply(x: x.magnitude, y: y.magnitude, result: &result.magnitude)
+        
+        result.normalize()
         
     }
     
@@ -229,16 +235,20 @@ public extension BigNumber {
      *      - quotient: `UBigNumber` object that stores the quotient
      *      - remainder: `UBigNumber` object that stores the remainder
      */
-    static func divide <T: BinaryInteger> (dividend: T, divisor: T, quotient: inout BigNumber, remainder: inout BigNumber) {
+    static func divide (dividend: BigNumber, divisor: BigNumber, quotient: inout BigNumber, remainder: inout BigNumber) {
         
         if dividend.signum() == divisor.signum() {
             quotient.sign = 1
+        } else {
+            quotient.sign = -1
         }
         
-        quotient.sign = -1
-        remainder.sign = 1
+        remainder.sign = dividend.sign
         
-        UBN.divide(dividend: dividend, divisor: divisor, quotient: &quotient.magnitude, remainder: &remainder.magnitude)
+        UBN.divide(dividend: dividend.magnitude, divisor: divisor.magnitude, quotient: &quotient.magnitude, remainder: &remainder.magnitude)
+        
+        quotient.normalize()
+        remainder.normalize()
         
     }
     

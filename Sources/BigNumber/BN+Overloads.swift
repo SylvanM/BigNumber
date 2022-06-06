@@ -114,7 +114,7 @@ public extension BigNumber {
     ///   - lhs: A BigNumber value.
     ///   - rhs: Another BigNumber value.
     static func |= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.or(with: rhs)
+        lhs.or(with: BigNumber(rhs))
     }
     
     /// Stores the result of performing a bitwise AND operation on the two given
@@ -124,7 +124,7 @@ public extension BigNumber {
     ///   - lhs: A BigNumber value.
     ///   - rhs: Another BigNumber value.
     static func &= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.and(with: rhs)
+        lhs.and(with: BigNumber(rhs))
     }
     
     /// Stores the result of performing a bitwise XOR operation on the two given
@@ -134,7 +134,7 @@ public extension BigNumber {
     ///   - lhs: A BigNumber value.
     ///   - rhs: Another BigNumber value.
     static func ^= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.xor(with: rhs)
+        lhs.xor(with: BigNumber(rhs))
     }
     
     /// Left bitshifts a value by another, and stores the result in the left hand side variable
@@ -143,7 +143,7 @@ public extension BigNumber {
     ///     - a: value to left bitshift
     ///     - b: amoutnt by which to left bitshift
     static func <<= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.leftShift(by: rhs)
+        lhs.leftShift(by: BigNumber(rhs))
     }
     
     /// Right bitshifts a value by another, and stores the result in the left hand side variable
@@ -153,7 +153,7 @@ public extension BigNumber {
     ///     - a: value to right bitshift
     ///     - b: amoutnt by which to right bitshift
     static func >>= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
-        lhs.rightShift(by: rhs)
+        lhs.rightShift(by: BigNumber(rhs))
     }
     
     /// One's compliment
@@ -177,7 +177,7 @@ public extension BigNumber {
     /// - Returns: Bitwise `OR` of the two `UBigNumbers`
     static func | <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
         var a = lhs
-        return a.or(with: rhs)
+        return a.or(with: BigNumber(rhs))
     }
     
     /// Bitwise AND operator
@@ -191,7 +191,7 @@ public extension BigNumber {
     /// - Returns: Bitwise AND of the two BigNumbers with a size of the larger BigNumber
     static func & <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
         var a = lhs
-        return a.and(with: rhs)
+        return a.and(with: BigNumber(rhs))
     }
     
     /// Bitwise XOR operator
@@ -205,7 +205,7 @@ public extension BigNumber {
     /// - Returns: Bitwise XOR of the two BigNumbers with a size of the larger BigNumber
     static func ^ <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
         var a = lhs
-        return a.xor(with: rhs)
+        return a.xor(with: BigNumber(rhs))
     }
     
     /// Left bitshifts the given BigNumber by a given integer amount with overflow handling. When the result would be of a bigger size than the
@@ -218,7 +218,7 @@ public extension BigNumber {
     /// - Returns: Exactly what you would expect
     static func << <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
         var a = lhs
-        return a.leftShift(by: rhs)
+        return a.leftShift(by: BigNumber(rhs))
     }
     
     /// Right bitshifts the given BigNumber by a given integer amount
@@ -230,7 +230,7 @@ public extension BigNumber {
     /// - Returns: Exactly what you would expect
     static func >> <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
         var a = lhs
-        return a.rightShift(by: rhs)
+        return a.rightShift(by: BigNumber(rhs))
     }
     
     // MARK: Arithmetic Operators
@@ -265,18 +265,6 @@ public extension BigNumber {
     }
     
     /**
-     *
-     * Multiplication assignment operator
-     *
-     * - Parameters:
-     *      - lhs: multiplicand
-     *      - rhs: multiplier
-     */
-    static func *= (lhs: inout BigNumber, rhs: Int) {
-        multiply(x: lhs, y: BN(rhs), result: &lhs)
-    }
-    
-    /**
      * Division assignment operator
      *
      * - Parameters:
@@ -291,6 +279,9 @@ public extension BigNumber {
     static func %= (lhs: inout BigNumber, rhs: BigNumber) {
         var q = BN()
         divide(dividend: lhs, divisor: rhs, quotient: &q, remainder: &lhs)
+        while lhs < 0 {
+            lhs.add(rhs)
+        }
     }
     
     // MARK: Non-Assignment Arithmetic Operators
@@ -335,32 +326,6 @@ public extension BigNumber {
         return p
     }
     
-    /// Multiplies a BigNumber by an `Int`
-    ///
-    /// - Parameters:
-    ///     - lhs: A BigNumber to multiply
-    ///     - rhs: A BigNumber to multiply
-    ///
-    /// - Returns: Product of ```lhs``` and ```rhs```
-    static func * (lhs: BigNumber, rhs: Int) -> BigNumber {
-        var p = BN()
-        BigNumber.multiply(x: lhs, y: BN(rhs), result: &p)
-        return p
-    }
-    
-    /// Multiplies an `Int` by a `UBN`
-    ///
-    /// - Parameters:
-    ///     - lhs: An integer to multiply
-    ///     - rhs: A BigNumber to multiply
-    ///
-    /// - Returns: Product of ```lhs``` and ```rhs```
-    static func * (lhs: Int, rhs: BigNumber) -> BigNumber {
-        var p = BN()
-        BigNumber.multiply(x: BN(lhs), y: rhs, result: &p)
-        return p
-    }
-    
     /// Divides two BigNumbers
     ///
     /// - Parameters:
@@ -385,6 +350,10 @@ public extension BigNumber {
         var a = lhs
         a %= rhs
         return a
+    }
+    
+    static prefix func - (x: BigNumber) -> BigNumber {
+        x.negative
     }
     
     // MARK: Private functions

@@ -78,7 +78,11 @@ public struct BigNumber: BNProtocol {
     }
     
     var hexString: String {
-        (sign == -1 ? "-1" : "") + magnitude.hexString
+        (sign == -1 ? "-" : "") + magnitude.hexString
+    }
+    
+    public var description: String {
+        (sign == -1 ? "-" : "") + magnitude.description
     }
     
     var leastSignificantBitIsSet: Bool {
@@ -109,6 +113,11 @@ public struct BigNumber: BNProtocol {
     
     // MARK: Initializers
     
+    public init(_ other: BN) {
+        self.sign = other.sign
+        self.magnitude = other.magnitude
+    }
+    
     public init(_ magnitude: UBN) {
         self.init(sign: 1, magnitude: magnitude)
     }
@@ -116,6 +125,7 @@ public struct BigNumber: BNProtocol {
     public init(sign: Int, magnitude: UBN) {
         self.magnitude = magnitude
         self.sign = sign
+        normalize()
     }
     
     public init(arrayLiteral elements: Magnitude.ArrayLiteralElement...) {
@@ -126,6 +136,7 @@ public struct BigNumber: BNProtocol {
     public init(integerLiteral value: Int) {
         self.magnitude = UBN(integerLiteral: value.magnitude)
         self.sign = value.signum()
+        normalize()
     }
     
     public init(floatLiteral value: Magnitude.FloatLiteralType) {
@@ -175,7 +186,7 @@ public struct BigNumber: BNProtocol {
     }
     
     public init<T>(truncatingIfNeeded source: T) where T : BinaryInteger {
-        self.magnitude = UBN(exactly: source.magnitude)!
+        self.magnitude = UBN(truncatingIfNeeded: source.magnitude)
         self.sign = Int(source.signum())
     }
     

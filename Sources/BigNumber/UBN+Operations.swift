@@ -43,19 +43,20 @@ public extension UBigNumber {
      *
      * - Returns: a positive integer if `self` is greater than `other`, a negative integer if `self` is less than `other`, and `0` if `self` is equal to `other`
      */
-    func compare <T: BinaryInteger> (to other: T) -> Int {
-        let otherUBN = UBN(other)
-
-        let sizeDifference = self.size - otherUBN.size
-
-        if sizeDifference != 0 { return sizeDifference }
+    func compare(to other: UBigNumber) -> Int {
+        
+        if self.size > other.size {
+            return 1
+        } else if self.size < other.size {
+            return -1
+        }
 
         // Compare most significant words
         for i in (0..<size).reversed() {
-            if self[i] > otherUBN[i] {
+            if self[i] > other[i] {
                 return 1
             }
-            if self[i] < otherUBN[i] {
+            if self[i] < other[i] {
                 return -1
             }
         }
@@ -122,26 +123,29 @@ public extension UBigNumber {
             rightShift(by: shift.magnitude)
         }
         
+        if self.isZero || shift == 0 {
+            return self
+        }
+        
         let wordShift = Int(shift) / WordType.bitWidth
         let bitShift  = Int(shift) % WordType.bitWidth
         
-        if wordShift != 0 {
-            words += Words(repeating: 0, count: wordShift + 1)
-        }
-        
+        // This is my implementation
+        words += Words(repeating: 0, count: wordShift + (bitShift > mostSignificantWord.leadingZeroBitCount ? 1 : 0))
+
         for i in (wordShift..<size).reversed() {
             words[i] = words[i - wordShift]
         }
-        
+
         for i in 0..<wordShift {
             words[i] = 0
         }
-        
+
         for i in (1..<size).reversed() {
             words[i] <<= bitShift
-            words[i] += words[i - 1] >> (UInt.bitSize - bitShift)
+            words[i] += words[i - 1] >> (WordType.bitWidth - bitShift)
         }
-    
+
         words[0] <<= bitShift
         
         return self.normalize()
@@ -318,15 +322,12 @@ public extension UBigNumber {
      *      - quotient: `UBigNumber` object that stores the quotient
      *      - remainder: `UBigNumber` object that stores the remainder
      */
-    static func divide <T: BinaryInteger> (dividend: T, divisor: T, quotient: inout UBigNumber, remainder: inout UBigNumber) {
-        
-        let a = UBN(dividend)
-        let b = UBN(divisor)
+    static func divide (dividend: UBigNumber, divisor: UBigNumber, quotient: inout UBigNumber, remainder: inout UBigNumber) {
         
         quotient = 0
-        remainder = a
+        remainder = dividend
         
-        let cmp = a.compare(to: b)
+        let cmp = dividend.compare(to: divisor)
         
         if divisor == 0 {
             fatalError("Cannot divide by 0")
@@ -338,41 +339,42 @@ public extension UBigNumber {
             
         else if cmp == 0 {
             remainder = 0
-            remainder.normalize()
             quotient = 1
             return
         }
         
-        if quotient.size < a.size - b.size + 1 {
-            quotient.words = Words(repeating: 0, count: a.size - b.size + 1)
+        if quotient.size < dividend.size - divisor.size + 1 {
+            quotient.words = Words(repeating: 0, count: dividend.size - divisor.size + 1)
         }
         
-        var partialProduct = a
-        var partialQuotient = a
+        var partialProduct = dividend
+        var partialQuotient = dividend
         
-        while -1 != remainder.compare(to: b) {
+        while remainder >= divisor {
             
             partialQuotient = 1
             
-            if remainder.mostSignificantWord >= b.mostSignificantWord {
-                partialQuotient[0] = remainder.mostSignificantWord / b.mostSignificantWord
-                partialQuotient.leftShift(by: (remainder.size - b.size) * 64)
+            if remainder.mostSignificantWord >= divisor.mostSignificantWord {
+                partialQuotient.leastSignificantWord = remainder.mostSignificantWord / divisor.mostSignificantWord
+                partialQuotient.leftShift(by: (remainder.size - divisor.size) * WordType.bitWidth)
             }
             else {
-                partialQuotient.leftShift(by: (remainder.size - b.size) * 64 + b.mostSignificantWord.leadingZeroBitCount - remainder.mostSignificantWord.leadingZeroBitCount)
+                partialQuotient.leftShift(by: (remainder.size - divisor.size) * WordType.bitWidth
+                                          + divisor.mostSignificantWord.leadingZeroBitCount
+                                          - remainder.mostSignificantWord.leadingZeroBitCount)
             }
             
-            multiply(x: b, y: partialQuotient, result: &partialProduct)
+            multiply(x: divisor, y: partialQuotient, result: &partialProduct)
             
-            while 1 == partialProduct.compare(to: remainder) {
+            while partialProduct > remainder {
                 
-                if partialProduct.leastSignificantWord & 1 == 0 {
+                if partialQuotient.leastSignificantWord & 1 == 0 {
                     partialProduct.rightShift(by: 1)
                     partialQuotient.rightShift(by: 1)
                 }
                 else {
-                    partialQuotient[0] &-= 1
-                    partialProduct.subtract(b)
+                    partialQuotient.leastSignificantWord -= 1
+                    partialProduct.subtract(divisor)
                 }
                 
             }
