@@ -48,8 +48,10 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     // MARK: Utility
     
     @discardableResult mutating func normalize() -> Self
+    
+    static func random(bytes: Int, generator: SecRandomRef?) -> Self
 
-    static func random(size: Int, generator: SecRandomRef?) -> Self
+    static func random(words: Int, generator: SecRandomRef?) -> Self
     
     mutating func setToZero() -> Self
     
@@ -197,7 +199,7 @@ internal protocol BNProtocol: RawBNProtocol, SignedInteger {
     
     // MARK: Methods
     
-    static func extgcd(a: Self, b: Self, x: inout Self, y: inout Self) -> Self
+    static func extgcd(a: Self, b: Self) -> (x: Self, y: Self, g: Self)
     
     mutating func set(sign: Int) -> Self
     

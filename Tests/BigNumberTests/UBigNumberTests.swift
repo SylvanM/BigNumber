@@ -33,6 +33,13 @@ class UBigNumberTests: XCTestCase {
         }
     }
     
+    func testTemp() throws {
+        let a: UBN = "0x2EC64DDFC60B42204862EFA12C35973D2E871283E2EA4EB9DF30CB1B501E434C"
+        let b: UBN = "0xAC42518BF63B731220D4CD212118D440636CCA11D22B9891937F2B2428657E35"
+        
+        _ = a * b
+    }
+    
     // MARK: Initializers
     
     func testIntegerInitialiers() {
@@ -80,6 +87,10 @@ class UBigNumberTests: XCTestCase {
         a = "FFFFFFFFAAAAAAAACCCCCCCCDDDDDDDD"
 
         XCTAssertEqual(a.words, [0xCCCCCCCCDDDDDDDD, 0xFFFFFFFFAAAAAAAA])
+        
+        a = [1, 2, 3, 4]
+        
+        print(a)
         
     }
     
@@ -159,7 +170,7 @@ class UBigNumberTests: XCTestCase {
         
         for _ in 1...100 {
             
-            a = UBN.random(size: Int.random(in: 1...10))
+            a = UBN.random(words: Int.random(in: 1...10))
             
             XCTAssertTrue(a.isNormal)
             
@@ -404,8 +415,8 @@ class UBigNumberTests: XCTestCase {
         XCTAssertEqual(e - f, d)
         
         for _ in 1...100 {
-            a = UBN.random(size: Int.random(in: 10...1000))
-            b = UBN.random(size: Int.random(in: 10...1000))
+            a = UBN.random(words: Int.random(in: 10...1000))
+            b = UBN.random(words: Int.random(in: 10...1000))
             c = a + b
             
             XCTAssertEqual(c - b, a)
@@ -433,10 +444,32 @@ class UBigNumberTests: XCTestCase {
         XCTAssertEqual(e * d, f)
         XCTAssertEqual(f / e, d)
         
+        // Smaller (more realistic) integer sizes
+        let smallerA: UBN = "0xF55425D78A39772FB563B5D7DE7CD5FE0F2DA65AF822F317AAC34C4778F708B5"
+        let smallerB: UBN = "0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F"
+        let correctProduct: UBN = "0xc593145c75a72f4674e4ef77734eeca8628f80b1097c8e8bbc663c76890b4877fd3506467b8697b0388af63283fb71bd55299e2ff1f15685ec419898bca6381b"
+        
+        let computedProduct = smallerA * smallerB
+        let computedQuotientA = correctProduct / smallerA
+        let computedQuotientB = computedProduct / smallerB
+        
+        XCTAssertEqual(computedProduct, correctProduct) // passes
+        XCTAssertEqual(computedQuotientA, smallerB) // fails. computed quotient: 0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F
+        XCTAssertEqual(computedQuotientB, smallerA) // fails. computed quotient: 0xF55425D78A39772FB563B5D7DE7CD5FE0F2DA65AF822F317AAC34C4778F708B5
+        
+        let cqDiffA = computedQuotientA - smallerB
+        let cqDiffB = computedQuotientB - smallerA
+        
+        print("Printing Difference")
+        print(UBN("0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F") - UBN("0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F"))
+        
+        XCTAssertEqual(cqDiffA, 0)
+        XCTAssertEqual(cqDiffB, 0)
+        
         for _ in 1...100 {
 
             var a = UBN(1)
-            var b = UBN.random(size: 5)
+            var b = UBN.random(words: 5)
 
             XCTAssertEqual(b / a, b)
 
@@ -449,8 +482,8 @@ class UBigNumberTests: XCTestCase {
 
             XCTAssertEqual(a / b, 0)
             
-            a = UBN.random(size: 10)
-            b = UBN.random(size: 5)
+            a = UBN.random(words: 10)
+            b = UBN.random(words: 5)
             let c = a * b
             
             XCTAssertEqual(c / b, a)
@@ -460,11 +493,27 @@ class UBigNumberTests: XCTestCase {
         
     }
     
+    func testCraziness() {
+        // calculate a factorial of a ludicrously big number!
+        
+        var a: UBN = 170
+        
+        var fact: UBN = 1
+        
+        while a > 1 {
+            fact *= a
+            a -= 1
+        }
+        
+        print(fact)
+        
+    }
+    
     func testUnsignedAdditionMultiplicationSymmetry() {
         
         for i in 1...256 {
             
-            let a = UBN.random(size: i)
+            let a = UBN.random(words: i)
             
             XCTAssertEqual(a + a, 2 * a)
             
@@ -478,6 +527,14 @@ class UBigNumberTests: XCTestCase {
             
             XCTAssertEqual(accumulator, scalar * a, "Repeated addition and multiplication are the same")
         }
+        
+    }
+    
+    func testEvilDivision() {
+        let a: UBN = "0x7B428446BEA9CBC2F05FC6CC012888DDFD0B8B718FA83D4D9E6FE0791798729E4E35F3D056E0EAA72B8613826A118C2E3834358B31D0F8EA5504E3DBCB36E1"
+        let b: UBN = "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED"
+        
+        _ = a / b
         
     }
 

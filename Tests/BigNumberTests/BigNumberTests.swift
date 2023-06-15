@@ -25,8 +25,8 @@ final class BigNumberTests: XCTestCase {
     func testSignedComparisons() {
         
         for _ in 0...255 {
-            var a = BN.random(size: 4)
-            var b = BN.random(size: 4)
+            var a = BN.random(words: 4)
+            var b = BN.random(words: 4)
             
             a.set(sign: -1)
             b.set(sign: 1)
@@ -297,7 +297,7 @@ final class BigNumberTests: XCTestCase {
         measure {
             for _ in 0...255 {
                 
-                var a = BN.random(size: 1)
+                var a = BN.random(words: 1)
                 let b = a
                 
                 a.add(a)
@@ -327,7 +327,7 @@ final class BigNumberTests: XCTestCase {
        
         for _ in 0...255 {
             
-            let a = BN.random(size: 3) * 2
+            let a = BN.random(words: 3) * 2
             
             XCTAssertEqual(a % 2, 0)
             
@@ -337,24 +337,22 @@ final class BigNumberTests: XCTestCase {
     
     
     
-    func testModularMethods() {
+    func testExtGcd() {
         
         let a: BN = 1398
         let b: BN = 324
         
-        var x = BN()
-        var y = BN()
+        let (g, x, y) = BN.extgcd(a: a, b: b)
         
-        let gcd = BN.extgcd(a: a, b: b, x: &x, y: &y)
-        
-        XCTAssertEqual(gcd, 6)
+        XCTAssertEqual(a.gcd(b), 6)
+        XCTAssertEqual(g, 6)
         XCTAssertEqual(x, -19)
         XCTAssertEqual(y, 82)
         
         XCTAssertEqual(a.gcd(b), b.gcd(a))
-        XCTAssertEqual(a.gcd(b), gcd)
+        XCTAssertEqual(a.gcd(b), g)
         
-        XCTAssertEqual(a * x + b * y, gcd)
+        XCTAssertEqual(a * x + b * y, g)
         XCTAssertEqual(a * -19 + b * 82, 6)
         
     }

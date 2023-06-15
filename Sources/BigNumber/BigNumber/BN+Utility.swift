@@ -44,9 +44,42 @@ public extension BigNumber {
      *
      * - Returns: A `UBN` with a random value
      */
-    static func random(size: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
+    static func random(words: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
         
-        let randomMag = UBN.random(size: size, generator: generator)
+        let randomMag = UBN.random(words: words, generator: generator)
+        var randomSign = [0]
+        
+        if randomMag.isZero {
+            return BN(sign: randomSign[0], magnitude: randomMag)
+        }
+        
+        // randomize the sign
+        _ = SecRandomCopyBytes(generator, 1, &randomSign)
+        
+        randomSign[0] %= 2
+        randomSign[0] *= 2
+        randomSign[0] -= 1
+        
+        var random = BN()
+        
+        random.sign = randomSign[0]
+        random.magnitude = randomMag
+        
+        return random
+        
+    }
+    
+    /**
+     * Generates a random `UBN`
+     *
+     * - Parameters:
+     *      - bytes: The maximum number of bytes in the random `UBN` to be generated
+     *
+     * - Returns: A `UBN` with a random value
+     */
+    static func random(bytes: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
+        
+        let randomMag = UBN.random(bytes: bytes, generator: generator)
         var randomSign = [0]
         
         if randomMag.isZero {

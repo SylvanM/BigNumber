@@ -12,42 +12,26 @@ public extension BigNumber {
     // MARK: Modulo Methods
     
     @discardableResult
-    static func extgcd(a: BigNumber, b: BigNumber, x: inout BigNumber, y: inout BigNumber) -> BigNumber {
-        
-        x = 0
-        y = 0
-        
+    static func extgcd(a: BigNumber, b: BigNumber) -> (x: BigNumber, y: BigNumber, g: BigNumber) {
         if a == 0 {
-            
-            assert(!b.isZero, "gcd(0, 0) is undefined")
-            
-            y = 1
-            
-            y.sign = b.sign
-            return b
+            return (b, 0, 1)
         }
         
-        if b.isZero {
-            x = 1
-            x.sign = a.sign
-            return a
-        }
         
-        var xp: BN = 0
-        var yp: BN = 0
         
-        var q = BN()
-        var r = BN()
         
-        BN.divide(dividend: a, divisor: b, quotient: &q, remainder: &r)
-     
-        let gcd = extgcd(a: b, b: r, x: &xp, y: &yp)
-     
-        y = xp - (yp * q)
-        x = yp
-     
-        return gcd
+        let (g, x1, y1) = extgcd(a: b % a, b: a)
         
+        print("Running with a=\(a), b=\(b)")
+        print("g=\(g)\tx1=\(x1)\ty1=\(y1)")
+        
+        let x = y1 - (b / a) * x1
+        let y = x1
+        
+        print("x: \(x)=\(y1) - (\(b) / \(a)) * \(x1)")
+        print()
+        
+        return (g, x, y)
     }
     
     /**
@@ -60,10 +44,7 @@ public extension BigNumber {
      */
     func invMod(_ m: BigNumber) -> BigNumber {
 
-        var x: BigNumber = 0
-        var y: BigNumber = 0
-
-        BigNumber.extgcd(a: self, b: m, x: &x, y: &y)
+        let (x, _, _) = BigNumber.extgcd(a: self, b: m)
 
         return x
 

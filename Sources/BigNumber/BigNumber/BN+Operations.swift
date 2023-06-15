@@ -117,13 +117,15 @@ public extension BigNumber {
         }
         
         if self.sign == 0 {
-            self.magnitude = other.magnitude
-            self.sign = other.sign
+            self = other
+            return self
         }
         
-        if self.sign == 1 {
+        if self.sign == 1 { // at this point, the other number must be negative
             return self.subtract(other.negative)
         }
+        
+        // if this number is negative and the other is positive...
         
         let negSelf = self.negative
         
@@ -149,43 +151,36 @@ public extension BigNumber {
     /// - Returns: difference of `self` and `other`
     @discardableResult mutating func subtract (_ other: BigNumber) -> BigNumber {
         
-        var otherBN = BN(other)
+        if other.sign == -1 {
+            return self.add(other.negative)
+        }
+        
+        // now we assume we are subtracting a positive integer
         
         if self.sign == 0 {
-            self = otherBN.negative
+            self.magnitude = other.magnitude
+            self.sign = -1
+            return self
         }
         
-        if self.sign == -1 {
+        if self.sign == 1 {
+            // the difference of two positive numbers! Swell!
             
-            if otherBN.sign == -1 {
-                var neg = otherBN.negative
-                self = neg.subtract(self.negative)
+            if self.magnitude > other.magnitude {
+                self.magnitude.subtract(other.magnitude)
+                return self
+            } else if self.magnitude < other.magnitude {
+                self.magnitude = other.magnitude - self.magnitude
+                self.sign = -1
+                return self
+            } else {
+                self = 0
                 return self
             }
-            
-            // other sign is 1
-            self.magnitude.add(otherBN.magnitude)
-            return self
-            
         }
         
-        // sign is 1
-        if otherBN.sign == -1 {
-            self.magnitude.add(otherBN.magnitude)
-            return self
-        }
-        
-        if self.magnitude == other.magnitude {
-            return 0
-        }
-        
-        if self.magnitude > other.magnitude {
-            self.magnitude.subtract(other.magnitude)
-            return self
-        }
-        
-        self.magnitude = otherBN.magnitude.subtract(self.magnitude)
-        self.sign = -1
+        // self is a negative number, so we are looking at a negative number minus a positive number
+        self.magnitude.add(other.magnitude)
         return self
         
     }
@@ -252,9 +247,23 @@ public extension BigNumber {
         
     }
     
+    /**
+     * Performs modular division by `other` modulo `m`
+     */
     func moddiv(by other: BigNumber, m: BigNumber) -> BigNumber {
         BN(UBN(self).moddiv(by: UBN(other), m: UBN(m)))
     }
     
+    /**
+     * Returns `self` raised to the power of `power`, where `power` is a non-negative integer
+     *
+     * - Invariant: `power >= 0`
+     */
+    func pow(_ power: BigNumber) -> BigNumber {
+        BigNumber(
+            sign: power.isEven ? sign * sign : sign,
+            magnitude: self.magnitude.pow(power.magnitude)
+        )
+    }
     
 }

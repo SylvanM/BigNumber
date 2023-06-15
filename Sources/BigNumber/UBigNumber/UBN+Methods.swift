@@ -101,7 +101,7 @@ public extension UBigNumber {
             var rand: UBN
             
             repeat {
-                rand = UBN.random(size: size)
+                rand = UBN.random(words: size)
             } while rand == self
                         
             

@@ -266,6 +266,8 @@ public extension UBigNumber {
      */
     static func multiply <T: BinaryInteger> (x: T, y: T, result: inout UBigNumber) {
         
+        result = 0
+        
         let a = UBN(x)
         let b = UBN(y)
         
@@ -305,6 +307,24 @@ public extension UBigNumber {
         }
         
         result.normalize()
+        
+    }
+
+    /**
+     * Raises `self` to the power of `power`
+     */
+    func pow(_ power: UBigNumber) -> UBigNumber {
+        // TODO: Make this not super slow!
+        
+        var countdown = power
+        var product = UBN(1)
+        
+        while countdown != 0 {
+            product *= self
+            countdown -= 1
+        }
+        
+        return product
         
     }
     
@@ -347,15 +367,16 @@ public extension UBigNumber {
             quotient.words = Words(repeating: 0, count: dividend.size - divisor.size + 1)
         }
         
-        var partialProduct = dividend
-        var partialQuotient = dividend
+        var partialProduct: UBigNumber = 0
         
         while remainder >= divisor {
             
-            partialQuotient = 1
+            var partialQuotient: UBigNumber = 1
             
             if remainder.mostSignificantWord >= divisor.mostSignificantWord {
+                // these are checking different actual words. the MSW of remainder may be its 2nd word, MSB of divisor might be 1st word. is that okay?
                 partialQuotient.leastSignificantWord = remainder.mostSignificantWord / divisor.mostSignificantWord
+                
                 partialQuotient.leftShift(by: (remainder.size - divisor.size) * WordType.bitWidth)
             }
             else {
@@ -363,6 +384,7 @@ public extension UBigNumber {
                                           + divisor.mostSignificantWord.leadingZeroBitCount
                                           - remainder.mostSignificantWord.leadingZeroBitCount)
             }
+            
             
             multiply(x: divisor, y: partialQuotient, result: &partialProduct)
             
@@ -378,7 +400,6 @@ public extension UBigNumber {
                 }
                 
             }
-            
             remainder.subtract(partialProduct)
             quotient.add(partialQuotient)
             

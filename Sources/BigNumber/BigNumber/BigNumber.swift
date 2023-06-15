@@ -15,8 +15,6 @@ public typealias BN = BigNumber
  */
 public struct BigNumber: BNProtocol {
     
-    
-    
     public typealias WordType = Magnitude.WordType
     
     public typealias Words = Magnitude.Words
@@ -111,6 +109,10 @@ public struct BigNumber: BNProtocol {
         magnitude.nonzeroBitCount + sign.nonzeroBitCount
     }
     
+    var isEven: Bool {
+        magnitude.isEven
+    }
+    
     // MARK: Initializers
     
     public init(_ other: BN) {
@@ -144,11 +146,15 @@ public struct BigNumber: BNProtocol {
     }
     
     public init(stringLiteral value: Magnitude.StringLiteralType) {
-        var fixedString = value
+        self.init(value)
+    }
+    
+    public init(_ string: String) {
+        var fixedString = string
         
         if let firstCharacter = fixedString.first, firstCharacter == "-" {
             sign = -1
-            fixedString = String(value.dropFirst())
+            fixedString = String(string.dropFirst())
         } else {
             sign = 1
         }

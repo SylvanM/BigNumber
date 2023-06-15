@@ -159,6 +159,11 @@ public struct UBigNumber: UBNProtocol {
         words.map { $0.nonzeroBitCount }.reduce(0, +)
     }
     
+    /// Whether or not this number is even
+    public var isEven: Bool {
+        words[0] % 2 == 0
+    }
+    
     // MARK: Private Properties
     
     /// The two's compliment of this `UBN`
