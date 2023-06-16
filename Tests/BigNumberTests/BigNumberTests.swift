@@ -13,7 +13,6 @@ final class BigNumberTests: XCTestCase {
 
     func testExample() {
         let x = UBN(UBigNumber.WordType.max)
-        print(x)
         let y: UBN = "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000"
         
         XCTAssertEqual(y.words, [1, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 0x5555555555555554, 0x0000000000000000, 0x0000000000000000].reversed())
@@ -256,9 +255,6 @@ final class BigNumberTests: XCTestCase {
         // general cases
         for _ in 0...255 {
             let powOfTwo = UBN(1) << UBN.init(secureRandomBytes: 1)
-            if !powOfTwo.isPowerOfTwo {
-                print(powOfTwo)
-            }
             XCTAssertTrue(powOfTwo.isPowerOfTwo)
         }
 

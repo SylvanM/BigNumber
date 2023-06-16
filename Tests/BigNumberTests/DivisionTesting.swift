@@ -76,20 +76,6 @@ final class DivisionTesting: XCTestCase {
             
             UBN.divide(dividend: product, divisor: divisor, quotient: &quotient, remainder: &remainder)
             
-            if knownQuotient != quotient {
-                // print out some stuff and then crash
-                print("Test FAIL! Information:")
-                print("product: \(product)")
-                print("divisor: \(divisor)")
-                print("knownQuo: \(knownQuotient)")
-                print("\(product) = \(divisor) * \(knownQuotient)")
-                
-                print("Attempting to compute \(product) / \(divisor)")
-                print("Expecting\tquotient=\(knownQuotient)")
-                print("But instead got\tquotient=\(quotient)")
-                XCTFail()
-            }
-            
             XCTAssertEqual(knownQuotient, quotient)
             XCTAssertEqual(remainder, 0)
         }

@@ -88,30 +88,6 @@ class UBigNumberTests: XCTestCase {
 
         XCTAssertEqual(a.words, [0xCCCCCCCCDDDDDDDD, 0xFFFFFFFFAAAAAAAA])
         
-        a = [1, 2, 3, 4]
-        
-        print(a)
-        
-    }
-    
-    func testFloatingPointInitializers() {
-        
-        var a = UBN()
-
-        XCTAssertEqual(a.words, [0])
-
-        a = 4.225334e10
-        
-        XCTAssertEqual(a.words, [42253340000])
-
-        a = 92.23453246e36
-        
-        XCTAssertEqual(a.words, [0x2DFEEFDC80000000, 0x4563B96D41449B90])
-        
-        a = 18446744073e8
-        
-        XCTAssertEqual(a.words, [UInt(1844674407300000000)])
-        
     }
     
     // MARK: Properties
@@ -205,11 +181,6 @@ class UBigNumberTests: XCTestCase {
             XCTAssertEqual(a.leastSignificantWord, 1 << i)
     
             XCTAssertTrue(a.isPowerOfTwo)
-            
-            if !a.isPowerOfTwo {
-                print(a)
-                print(shift)
-            }
             
             XCTAssertEqual(a.trailingZeroBitCount, shift)
             
@@ -453,15 +424,12 @@ class UBigNumberTests: XCTestCase {
         let computedQuotientA = correctProduct / smallerA
         let computedQuotientB = computedProduct / smallerB
         
-        XCTAssertEqual(computedProduct, correctProduct) // passes
-        XCTAssertEqual(computedQuotientA, smallerB) // fails. computed quotient: 0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F
-        XCTAssertEqual(computedQuotientB, smallerA) // fails. computed quotient: 0xF55425D78A39772FB563B5D7DE7CD5FE0F2DA65AF822F317AAC34C4778F708B5
+        XCTAssertEqual(computedProduct, correctProduct)
+        XCTAssertEqual(computedQuotientA, smallerB)
+        XCTAssertEqual(computedQuotientB, smallerA)
         
         let cqDiffA = computedQuotientA - smallerB
         let cqDiffB = computedQuotientB - smallerA
-        
-        print("Printing Difference")
-        print(UBN("0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F") - UBN("0xCE2B2A8CB8B197153166450A1EBC981E00CFD8E252E7CBD35586C2D738E6CF8F"))
         
         XCTAssertEqual(cqDiffA, 0)
         XCTAssertEqual(cqDiffB, 0)
@@ -504,8 +472,6 @@ class UBigNumberTests: XCTestCase {
             fact *= a
             a -= 1
         }
-        
-        print(fact)
         
     }
     

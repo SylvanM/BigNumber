@@ -17,19 +17,10 @@ public extension BigNumber {
             return (b, 0, 1)
         }
         
-        
-        
-        
         let (g, x1, y1) = extgcd(a: b % a, b: a)
-        
-        print("Running with a=\(a), b=\(b)")
-        print("g=\(g)\tx1=\(x1)\ty1=\(y1)")
         
         let x = y1 - (b / a) * x1
         let y = x1
-        
-        print("x: \(x)=\(y1) - (\(b) / \(a)) * \(x1)")
-        print()
         
         return (g, x, y)
     }
@@ -43,11 +34,8 @@ public extension BigNumber {
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
     func invMod(_ m: BigNumber) -> BigNumber {
-
-        let (x, _, _) = BigNumber.extgcd(a: self, b: m)
-
+        let (_, x, _) = BigNumber.extgcd(a: self, b: m)
         return x
-
     }
     
     // MARK: Modular Exponentiation (Non-operator definitions)

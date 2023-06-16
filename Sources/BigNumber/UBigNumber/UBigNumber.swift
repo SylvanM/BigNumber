@@ -184,10 +184,10 @@ public struct UBigNumber: UBNProtocol {
     /// - Parameters:
     ///     - source: Object conforming to ```BinaryFloatingPoint``` to convert to ```UBigNumber```
     ///
+    /// - Warning: This is imprecise, and I have yet to figure out whether it's due to floating point error or this initializer just being written wrong.
+    ///
     /// - Returns: The `UBN` representation of the integer value of `source` if `source > 0`. If not, this returns `nil`
     public init?<T>(exactly source: T) where T : BinaryFloatingPoint {
-        
-        #warning("This does not work")
         
         guard source.isFinite else { return nil }
         
@@ -204,9 +204,11 @@ public struct UBigNumber: UBNProtocol {
         let division = Int(source.exponent + 1).quotientAndRemainder(dividingBy: UInt.bitSize)
         let arraySize = division.quotient + (division.remainder != 0 ? 1 : 0)
         self.words = Words(repeating: 0, count: Int(arraySize))
-        
+
         let hiBitCount = Int(source.exponent + 1) % UInt.bitSize
         let loBitCount = (T.significandBitCount + 1) - hiBitCount
+        
+        
 
         self.words[words.count - 1] = UInt(source.significandBitPattern + (1 << T.significandBitCount)) >> loBitCount // shift out the lo bits and only have the hi bits as the least significant bits for this word
         if self.words.count == 1 { return } // because we don't care about the fractional component
