@@ -51,7 +51,17 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     mutating func setToZero() -> Self
     
+    // MARK: Initializers
+    
+    init(_: BigNumber, mod: Int)
+    
+    init(_: UBigNumber, mod: Int)
+    
+    init(_: Self)
+    
     // MARK: Modular Methods
+    
+    func mod(_ m: Self) -> Self
     
     func invMod(_ m: Self) -> Self
     

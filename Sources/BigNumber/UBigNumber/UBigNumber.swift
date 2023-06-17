@@ -166,6 +166,20 @@ public struct UBigNumber: UBNProtocol {
         /* Do nothing */
     }
     
+    /**
+     * Initializes a `UBigNumber` as a `BigNumber`, modulo some modulus.
+     */
+    init(_ other: BigNumber, mod m: Int) {
+        self.init(other.mod(BN(m)).magnitude)
+    }
+    
+    /**
+     * Initializes a `UBigNumber` as another `UBigNumber`, modulo some modulus.
+     */
+    init(_ other: UBigNumber, mod m: Int) {
+        self.init(other % UBN(m))
+    }
+    
     /// Creates a new ```UBigNumber``` with the integer value of `source`
     ///
     /// - Parameters:

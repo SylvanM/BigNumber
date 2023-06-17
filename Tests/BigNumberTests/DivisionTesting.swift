@@ -97,6 +97,12 @@ final class DivisionTesting: XCTestCase {
         XCTAssertEqual(BN.gcd(a, b), 6)
         
     }
+    
+    func testMod() throws {
+        
+        
+        
+    }
 
     func testPerformanceExample() throws {
         // This is an example of a performance test case.

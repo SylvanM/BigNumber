@@ -12,6 +12,13 @@ public extension UBigNumber {
     // MARK: Modulo Methods
     
     /**
+     * Computes `self` modulo `m`. Because this is an unsigned type, this is equivalent to `self % m`
+     */
+    func mod(_ m: UBigNumber) -> UBigNumber {
+        self % m
+    }
+    
+    /**
      * Computes `x` such that `x * self = 1 (mod m)` or returns garbage if `x` is not relatively prime to `m`
      *
      * - Parameters:

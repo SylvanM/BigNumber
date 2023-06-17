@@ -115,6 +115,21 @@ public struct BigNumber: BNProtocol {
     
     // MARK: Initializers
     
+    /**
+     * Initializes a `BigNumber` as another `BigNumber`, modulo some modulus.
+     */
+    public init(_ other: BigNumber, mod m: Int) {
+        self.magnitude = UBN(other, mod: m)
+        self.sign = 1
+    }
+    
+    /**
+     * Initializes a `BigNumber` as a `UBigNumber`, modulo some modulus.
+     */
+    public init(_ other: UBigNumber, mod m: Int) {
+        self.init(UBN(other, mod: m))
+    }
+    
     public init(_ other: BN) {
         self.sign = other.sign
         self.magnitude = other.magnitude
