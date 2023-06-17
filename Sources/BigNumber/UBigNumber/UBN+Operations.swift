@@ -340,12 +340,12 @@ extension UBigNumber: Comparable, Equatable {
                 // these are checking different actual words. the MSW of remainder may be its 2nd word, MSB of divisor might be 1st word. is that okay?
                 partialQuotient.leastSignificantWord = remainder.mostSignificantWord / divisor.mostSignificantWord
                 
-                partialQuotient.leftShift(by: (remainder.size - divisor.size) * WordType.bitWidth)
+                partialQuotient <<= (remainder.size - divisor.size) * WordType.bitWidth
             }
             else {
-                partialQuotient.leftShift(by: (remainder.size - divisor.size) * WordType.bitWidth
-                                          + divisor.mostSignificantWord.leadingZeroBitCount
-                                          - remainder.mostSignificantWord.leadingZeroBitCount)
+                partialQuotient <<= (remainder.size - divisor.size) * WordType.bitWidth
+                                    + divisor.mostSignificantWord.leadingZeroBitCount
+                                    - remainder.mostSignificantWord.leadingZeroBitCount
             }
             
             
@@ -354,12 +354,12 @@ extension UBigNumber: Comparable, Equatable {
             while partialProduct > remainder {
                 
                 if partialQuotient.leastSignificantWord & 1 == 0 {
-                    partialProduct.rightShift(by: 1)
-                    partialQuotient.rightShift(by: 1)
+                    partialProduct >>= 1
+                    partialQuotient >>= 1
                 }
                 else {
                     partialQuotient.leastSignificantWord -= 1
-                    partialProduct.subtract(divisor)
+                    partialProduct -= divisor
                 }
                 
             }
