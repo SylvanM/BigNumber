@@ -12,12 +12,12 @@ public extension BigNumber {
     // MARK: Modulo Methods
     
     @discardableResult
-    static func extgcd(a: BigNumber, b: BigNumber) -> (x: BigNumber, y: BigNumber, g: BigNumber) {
+    static func extendedEuclidean(a: BigNumber, b: BigNumber) -> (g: BigNumber, x: BigNumber, y: BigNumber) {
         if a == 0 {
             return (b, 0, 1)
         }
         
-        let (g, x1, y1) = extgcd(a: b % a, b: a)
+        let (g, x1, y1) = extendedEuclidean(a: b % a, b: a)
         
         let x = y1 - (b / a) * x1
         let y = x1
@@ -34,8 +34,7 @@ public extension BigNumber {
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
     func invMod(_ m: BigNumber) -> BigNumber {
-        let (_, x, _) = BigNumber.extgcd(a: self, b: m)
-        return x
+        BigNumber.extendedEuclidean(a: self, b: m).x
     }
     
     // MARK: Modular Exponentiation (Non-operator definitions)
@@ -50,7 +49,7 @@ public extension BigNumber {
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modexp(a: BigNumber, b: BigNumber, m: BigNumber) -> BigNumber {
+    static func modPow(a: BigNumber, b: BigNumber, m: BigNumber) -> BigNumber {
         
         let bitSize = b.bitWidth
         var t: BN = a
@@ -75,32 +74,17 @@ public extension BigNumber {
     // MARK: - GCD Algorithms
     
     /**
-     * Returns the greatest common denominator of two `UBigNumber`s including this one
+     * Returns the GCD of two  `BigNumber`s
      *
-     * - Parameters:
-     *      - b: Another `UBN`
+     * - Parameter a: A `BigNumber`
+     * - Parameter b: A `BigNumber`
      *
-     * - Returns: `gcd(self, b)`
+     * - Precondition: `a` and `b` are not both zero.
+     *
+     * - Returns: The greatest common divisor of `a` and `b`
      */
-    func gcd(_ b: BigNumber) -> BigNumber {
-        
-        if self == 0 {
-            if b == 0 {
-                fatalError("gcd(0, 0) is undefined")
-            }
-            return b
-        }
-        
-        if b == 0 {
-            return self
-        }
-        
-        if self == 0 || b == 0 {
-            return 1
-        }
-        
-        return b.gcd(self % b)
-        
+    static func gcd(_ a: BigNumber, _ b: BigNumber) -> BigNumber {
+        genericGcd(a: a, b: b)
     }
     
     // MARK: Primality Tests

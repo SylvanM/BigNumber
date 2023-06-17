@@ -36,8 +36,8 @@ public extension UBigNumber {
      *
      * - Returns: ```a ^ b mod c```
      */
-    static func modexp(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
-        BN.modexp(a: BN(a), b: BN(b), m: BN(sign: invPower ? -1 : 1, magnitude: m)).magnitude
+    static func modPow(a: UBigNumber, b: UBigNumber, m: UBigNumber, invPower: Bool = false) -> UBigNumber {
+        BN.modPow(a: BN(a), b: BN(b), m: BN(sign: invPower ? -1 : 1, magnitude: m)).magnitude
     }
     
     // MARK: - GCD Algorithms
@@ -50,8 +50,8 @@ public extension UBigNumber {
      *
      * - Returns: `gcd(self, b)`
      */
-    func gcd(_ b: UBigNumber) -> UBigNumber {
-        UBN(BN(self).gcd(BN(b)))
+    static func gcd(_ a: UBigNumber, _ b: UBigNumber) -> UBigNumber {
+        genericGcd(a: a, b: b)
     }
     
     // MARK: Primality Tests
@@ -92,7 +92,7 @@ public extension UBigNumber {
             m *= prime
         }
         
-        if self.gcd(m) != 1 {
+        if UBN.gcd(self, m) != 1 {
             return false
         }
         
@@ -105,7 +105,7 @@ public extension UBigNumber {
             } while rand == self
                         
             
-            if UBN.modexp(a: rand, b: rand-1, m: self) != 1 {
+            if UBN.modPow(a: rand, b: rand-1, m: self) != 1 {
                 return false
             }
             

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension BigNumber {
+fileprivate extension BigNumber {
     
     // MARK: Comparisons
     
@@ -17,85 +17,8 @@ public extension BigNumber {
             return false
         }
         
-        return self.magnitude.equals(other.magnitude)
+        return self.magnitude == other.magnitude
         
-    }
-    
-    /**
-     * Compares this `BN` to a `BinaryInteger`, returning an `Int` representing their relation
-     *
-     * - Parameters:
-     *      - other: `BN` to compare
-     *
-     * - Returns: a positive integer if `self` is greater than `other`, a negative integer if `self` is less than `other`, and `0` if `self` is equal to `other`
-     */
-    func compare (to other: BigNumber) -> Int {
-        
-        if self.sign != other.sign {
-            return sign - other.sign
-        }
-        
-        let magnitudeComparison = magnitude.compare(to: other.magnitude)
-        
-        return sign * magnitudeComparison
-        
-    }
-    
-    // MARK: Bitwise Operations
-    
-    /**
-     * OR's every word of this `BigNumber` with the respective word of another `BigNumber`
-     *
-     * - Parameters:
-     *      - other: another `BinaryInteger` to OR with this one
-     */
-    @discardableResult mutating func or (with other: BigNumber) -> BigNumber {
-        magnitude.or(with: other)
-        return self
-    }
-    
-    /**
-     * AND's every word of this `UBigNumber` with the corresponding word of another `UBigNumber`
-     *
-     * - Parameters:
-     *      - other: another `UBigNumber` to AND with this one
-     */
-    @discardableResult mutating func and (with other: BigNumber) -> BigNumber {
-        magnitude.and(with: other)
-        return self
-    }
-    
-    /**
-     * XOR's every word of this `UBigNumber` with the corresponding word of another `UBigNumber`
-     *
-     * - Parameters:
-     *      - other: another `UBigNumber` to XOR with this one
-     */
-    @discardableResult mutating func xor (with other: BigNumber) -> BigNumber {
-        magnitude.xor(with: other)
-        return self
-    }
-    
-    /**
-     * Left shifts this `BigNumber` by some integeral amount
-     *
-     * - Parameters:
-     *      - shift: Amount by which to left shift this `UBigNumber`
-     */
-    @discardableResult mutating func leftShift (by shift: BigNumber) -> BigNumber {
-        magnitude.leftShift(by: shift)
-        return self
-    }
-    
-    /**
-     * Right shifts this `BigNumber` by some integeral amount
-     *
-     * - Parameters:
-     *   - shift: Amount by which to left shift this `BigNumber`
-     */
-    @discardableResult mutating func rightShift (by shift: BigNumber) -> BigNumber {
-        magnitude.rightShift(by: shift)
-        return self
     }
     
     // MARK: Arithmetic Operations
@@ -112,7 +35,7 @@ public extension BigNumber {
     @discardableResult mutating func add (_ other: BigNumber, withOverflowHandling handleOverflow: Bool = true) -> BigNumber {
         
         if self.sign == other.sign {
-            self.magnitude.add(other.magnitude)
+            self.magnitude += other.magnitude
             return self
         }
         
@@ -122,7 +45,8 @@ public extension BigNumber {
         }
         
         if self.sign == 1 { // at this point, the other number must be negative
-            return self.subtract(other.negative)
+            self -= other.negative
+            return self
         }
         
         // if this number is negative and the other is positive...
@@ -132,18 +56,10 @@ public extension BigNumber {
         self.magnitude = other.magnitude
         self.sign = other.sign
         
-        self.subtract(negSelf)
+        self -= negSelf
         
         return self
         
-    }
-    
-    @discardableResult
-    mutating func modadd(_ other: BigNumber, m: BigNumber) -> BigNumber{
-        self %= m
-        self.add(other % m)
-        self %= m
-        return self
     }
     
     /// Subtracts a numerical value from this `UBN`
@@ -152,7 +68,8 @@ public extension BigNumber {
     @discardableResult mutating func subtract (_ other: BigNumber) -> BigNumber {
         
         if other.sign == -1 {
-            return self.add(other.negative)
+            self += other.negative
+            return self
         }
         
         // now we assume we are subtracting a positive integer
@@ -167,7 +84,7 @@ public extension BigNumber {
             // the difference of two positive numbers! Swell!
             
             if self.magnitude > other.magnitude {
-                self.magnitude.subtract(other.magnitude)
+                self.magnitude -= other.magnitude
                 return self
             } else if self.magnitude < other.magnitude {
                 self.magnitude = other.magnitude - self.magnitude
@@ -180,18 +97,12 @@ public extension BigNumber {
         }
         
         // self is a negative number, so we are looking at a negative number minus a positive number
-        self.magnitude.add(other.magnitude)
+        self.magnitude += other.magnitude
         return self
         
     }
     
-    @discardableResult
-    mutating func modsub(_ other: BigNumber, m: BigNumber) -> BigNumber {
-        self %= m
-        self.subtract(other % m)
-        self %= m
-        return self
-    }
+    
     
     /**
      * Multiplies `x` by another `y` and stores the result in `result`
@@ -202,56 +113,424 @@ public extension BigNumber {
      *      - result: `UBigNumber` to store product of `x` and `y`
      *      - handleOverflow: if `true`, this operation will append any necessary words to this `UBigNumber`
      */
-    static func multiply (x: BigNumber, y: BigNumber, result: inout BigNumber) {
+    func multiply (_ other: BigNumber) -> BigNumber {
         
-        if x.sign == y.sign {
+        var result: BN = 0
+        
+        if self.sign == other.sign {
             result.sign = 1
         } else {
             result.sign = -1
         }
-            
-        UBN.multiply(x: x.magnitude, y: y.magnitude, result: &result.magnitude)
+        
+        result.magnitude = self.magnitude * other.magnitude
         
         result.normalize()
         
+        return result
+        
     }
     
-    static func modmul(x: BigNumber, y: BigNumber, m: BigNumber, result: inout BigNumber) {
-        BN.multiply(x: x % m, y: y % m, result: &result)
-        result %= m
-    }
+}
+
+public extension BigNumber {
     
     /**
-     * Divides `dividend` by `divisor`, and stores the quotient and remainder in given objects
+     * Divides `self` by `divisor`, and stores the quotient and remainder in given objects
      *
      * - Parameters:
-     *      - dividend: `BinaryInteger` dividend
      *      - divisor: `BinaryInteger`
-     *      - quotient: `UBigNumber` object that stores the quotient
-     *      - remainder: `UBigNumber` object that stores the remainder
      */
-    static func divide (dividend: BigNumber, divisor: BigNumber, quotient: inout BigNumber, remainder: inout BigNumber) {
+    func quotientAndRemainder(dividingBy divisor: BigNumber) -> (quotient: BigNumber, remainder: BigNumber) {
         
-        if dividend.signum() == divisor.signum() {
+        var quotient: BN = 0
+        var remainder: BN = 0
+        
+        if self.signum() == divisor.signum() {
             quotient.sign = 1
         } else {
             quotient.sign = -1
         }
         
-        remainder.sign = dividend.sign
+        remainder.sign = self.sign
         
-        UBN.divide(dividend: dividend.magnitude, divisor: divisor.magnitude, quotient: &quotient.magnitude, remainder: &remainder.magnitude)
+        (quotient.magnitude, remainder.magnitude) = self.magnitude.quotientAndRemainder(dividingBy: divisor.magnitude)
         
         quotient.normalize()
         remainder.normalize()
         
+        return (quotient, remainder)
+        
+    }
+    
+    // MARK: - Comparative Operators
+    
+    /// Compares two `BigNumbers`, returns true if they are equal
+    ///
+    /// - Parameters:
+    ///     - lhs: `BigNumber` to compare
+    ///     - rhs: Another `BigNumber` to compare
+    ///
+    /// - Returns: `true` if `lhs` and `rhs` are numerically equivalent, `false` if not.
+    static func == (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        lhs.equals(rhs)
+    }
+    
+    /// Compares two BigNumbers and retuns true if they are not equal
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to compare
+    ///     - rhs: Another BigNumber to compare
+    ///
+    /// - Returns: True if they are equal, false if not
+    static func != (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        !lhs.equals(rhs)
+    }
+    
+    /// Greater than operator
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: True if lhs > rhs
+    static func > (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        if lhs.sign > rhs.sign {
+            return true
+        } else if lhs.sign == rhs.sign {
+            if lhs.sign == -1 {
+                return lhs.magnitude < rhs.magnitude
+            } else {
+                return lhs.magnitude > rhs.magnitude
+            }
+        } else {
+            return false
+        }
+    }
+    
+    /// Less than operator
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: True if lhs is less than rhs
+    static func < (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        if lhs.sign < rhs.sign {
+            return true
+        } else if lhs.sign == rhs.sign {
+            if lhs.sign == -1 {
+                return lhs.magnitude > rhs.magnitude
+            } else {
+                return lhs.magnitude < rhs.magnitude
+            }
+        } else {
+            return false
+        }
+    }
+    
+    /// Greater than or Equal to Operator
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: True if lhs >= rhs
+    static func >= (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        lhs > rhs || lhs == rhs
+    }
+    
+    /// Less than or Equal to Operator
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: True if `lhs` is less than or equal to
+    static func <= (lhs: BigNumber, rhs: BigNumber) -> Bool {
+        lhs < rhs || lhs == rhs
+    }
+    
+    // MARK: - Range Operators
+    
+    /// Returns a range of all values between two values, inclusive
+    ///
+    /// - Parameters:
+    ///     - lhs: Lower bound
+    ///     - rhs: Upper bound
+    ///
+    /// - Returns: An range of all values between ```lhs``` and ```rhs```, inclusive
+    static func ... <RHS: BinaryInteger>(lhs: BigNumber, rhs: RHS) -> ClosedRange<BigNumber> {
+        ClosedRange<BigNumber>(uncheckedBounds: (lower: lhs, upper: BN(rhs)))
+    }
+    
+    /// Returns all values between two values, excluding the upper bound
+    ///
+    /// - Parameters:
+    ///     - a: Lower bound
+    ///     - b: Upper bound
+    ///
+    /// - Returns: An array of all values between ```a``` and ```b```, excluding ```b```
+    static func ..< <RHS: BinaryInteger>(lhs: BigNumber, rhs: RHS) -> Range<BigNumber> {
+        Range<BigNumber>(uncheckedBounds: (lower: lhs, upper: BN(rhs)))
+    }
+    
+    // MARK: - Bitwise Operators
+    
+    /**
+     * All bitwise operators can be called with an argument of a `UBigNumber` and any other object conforming to the `BinaryInteger` protocol
+     */
+    
+    /// Stores the result of performing a bitwise OR operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    static func |= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.magnitude |= rhs.magnitude
+    }
+    
+    /// Stores the result of performing a bitwise AND operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    static func &= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.magnitude &= rhs.magnitude
+    }
+    
+    /// Stores the result of performing a bitwise XOR operation on the two given
+    /// values in the left-hand-side variable.
+    ///
+    /// - Parameters:
+    ///   - lhs: A BigNumber value.
+    ///   - rhs: Another BigNumber value.
+    static func ^= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
+        lhs.magnitude ^= rhs.magnitude
+    }
+    
+    /// Left bitshifts a value by another, and stores the result in the left hand side variable
+    ///
+    /// - Parameters:
+    ///     - a: value to left bitshift
+    ///     - b: amoutnt by which to left bitshift
+    static func <<= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
+        if rhs.signum() == -1 {
+            lhs >>= rhs * -1
+        } else {
+            lhs.magnitude <<= rhs.magnitude
+        }
+    }
+    
+    /// Right bitshifts a value by another, and stores the result in the left hand side variable
+    /// Currently, this only actually works when bitshifting by a number smaller than 64. :(
+    ///
+    /// - Parameters:
+    ///     - a: value to right bitshift
+    ///     - b: amoutnt by which to right bitshift
+    static func >>= <RHS>(lhs: inout BigNumber, rhs: RHS) where RHS : BinaryInteger {
+        if rhs.signum() == -1 {
+            lhs <<= rhs * -1
+        } else {
+            lhs.magnitude >>= rhs.magnitude
+        }
+    }
+    
+    /// One's compliment
+    ///
+    /// - Parameters:
+    ///     - ubn: The `UBigNumber` to get the compliment of
+    ///
+    /// - Returns: The binary compliment of `ubn`
+    static prefix func ~ (bn: BigNumber) -> BigNumber {
+        BN(sign: bn.sign, magnitude: ~(bn.magnitude))
+    }
+    
+    /// Bitwise OR operator
+    ///
+    /// Casts the smaller `UBigNumber` to a `UBigNumber` of the same size as the larger, and performs the bitwise `OR` operation, returning the resulting `UBigNumber`
+    ///
+    /// - Parameters:
+    ///     - lhs: `UBigNumber` to `OR`
+    ///     - rhs: `UBigNumber` to `OR`
+    ///
+    /// - Returns: Bitwise `OR` of the two `UBigNumbers`
+    static func | <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a |= rhs
+        return a
+    }
+    
+    /// Bitwise AND operator
+    ///
+    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise AND operation, returning the resulting BigNumber
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: Bitwise AND of the two BigNumbers with a size of the larger BigNumber
+    static func & <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a &= rhs
+        return a
+    }
+    
+    /// Bitwise XOR operator
+    ///
+    /// Casts the smaller BigNumber to a BigNumber of the same size as the larger, and performs the bitwise XOR operation, returning the resulting BigNumber
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber
+    ///
+    /// - Returns: Bitwise XOR of the two BigNumbers with a size of the larger BigNumber
+    static func ^ <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a ^= rhs
+        return a
+    }
+    
+    /// Left bitshifts the given BigNumber by a given integer amount with overflow handling. When the result would be of a bigger size than the
+    /// given ```BN```, a new ```UInt64``` is appended to the array
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to bitshift
+    ///     - rhs: Amount to bit shift
+    ///
+    /// - Returns: Exactly what you would expect
+    static func << <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a <<= rhs
+        return a
+    }
+    
+    /// Right bitshifts the given BigNumber by a given integer amount
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to bitshift
+    ///     - rhs: Amount to bit shift
+    ///
+    /// - Returns: Exactly what you would expect
+    static func >> <RHS>(lhs: BigNumber, rhs: RHS) -> BigNumber where RHS : BinaryInteger {
+        var a = lhs
+        a >>= rhs
+        return a
+    }
+    
+    // MARK: Arithmetic Operators
+    
+    /// Adds two BigNumbers and assigns the sum to the left operand
+    ///
+    /// This will add elements to the array if needed
+    ///
+    /// - Parameters:
+    ///     - a: BigNumber to add and also the variable to store the result
+    ///     - rhs: BigNumber to add to ```a```
+    ///
+    /// - Returns: Sum of ```a``` and ```rhs```
+    static func += (lhs: inout BigNumber, rhs: BigNumber) {
+        lhs.add(rhs)
+    }
+    
+    static func -= (lhs: inout BigNumber, rhs: BigNumber) {
+        lhs.subtract(rhs)
     }
     
     /**
-     * Performs modular division by `other` modulo `m`
+     *
+     * Multiplication assignment operator
+     *
+     * - Parameters:
+     *      - lhs: multiplicand
+     *      - rhs: multiplier
      */
-    func moddiv(by other: BigNumber, m: BigNumber) -> BigNumber {
-        BN(UBN(self).moddiv(by: UBN(other), m: UBN(m)))
+    static func *= (lhs: inout BigNumber, rhs: BigNumber) {
+        lhs = lhs.multiply(rhs)
+    }
+    
+    /**
+     * Division assignment operator
+     *
+     * - Parameters:
+     *      - lhs: dividend, as well as the `UBN` to store the output of the division
+     *      - rhs: divisor
+     */
+    static func /= (lhs: inout BigNumber, rhs: BigNumber) {
+        lhs = lhs.quotientAndRemainder(dividingBy: rhs).quotient
+    }
+    
+    static func %= (lhs: inout BigNumber, rhs: BigNumber) {
+        lhs = lhs.quotientAndRemainder(dividingBy: rhs).remainder
+        while lhs < 0 { lhs.add(rhs) }
+    }
+    
+    // MARK: Non-Assignment Arithmetic Operators
+    
+    
+    /// Adds two BigNumbers
+    ///
+    /// This will add elements to the array if needed
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber to add
+    ///     - rhs: BigNumber to add
+    ///
+    /// - Returns: Sum of ```lhs``` and ```rhs```
+    static func + (lhs: BigNumber, rhs: BigNumber) -> BigNumber {
+        var a = lhs
+        return a.add(rhs)
+    }
+    
+    /// Subtraction
+    ///
+    /// - Parameters:
+    ///     - lhs: BigNumber
+    ///     - rhs: BigNumber to subtract from ```lhs```
+    ///
+    /// - Returns: Difference of ```lhs``` and ```rhs```
+    static func - (lhs: BigNumber, rhs: BigNumber) -> BigNumber {
+        var a = lhs
+        return a.subtract(rhs)
+    }
+    
+    /// Multiplies two BigNumbers
+    ///
+    /// - Parameters:
+    ///     - lhs: A BigNumber to multiply
+    ///     - rhs: A BigNumber to multiply
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    static func * (lhs: BigNumber, rhs: BigNumber) -> BigNumber {
+        lhs.multiply(rhs)
+    }
+    
+    /// Divides two BigNumbers
+    ///
+    /// - Parameters:
+    ///     - lhs: A BigNumber to divide
+    ///     - rhs: BigNumber to divide ```rhs``` by
+    ///
+    /// - Returns: Product of ```lhs``` and ```rhs```
+    static func / (lhs: BigNumber, rhs: BigNumber) -> BigNumber {
+        lhs.quotientAndRemainder(dividingBy: rhs).quotient
+    }
+    
+    /// Modulo operation for two ```BigNumber```'s
+    ///
+    /// - Parameters:
+    ///     - lhs: ```BigNumber``` to modulo by another ```BigNumber```
+    ///     - rhs: ```BigNumber``` by which to modulo
+    ///
+    /// - Returns: ```lhs``` modulo ```rhs```
+    static func % (lhs: BigNumber, rhs: BigNumber) -> BigNumber {
+        lhs.quotientAndRemainder(dividingBy: rhs).remainder
+    }
+    
+    static prefix func - (x: BigNumber) -> BigNumber {
+        x.negative
     }
     
     /**
@@ -264,6 +543,24 @@ public extension BigNumber {
             sign: power.isEven ? sign * sign : sign,
             magnitude: self.magnitude.pow(power.magnitude)
         )
+    }
+    
+    // MARK: Private functions
+    
+    /// Returns the maximum of two comparables
+    ///
+    /// This function is being added to avoid ambiguity with the static property ```max``` which was giving me errors because
+    /// a ```UBigNumber``` does not conform to ```FixedWidthInteger```
+    ///
+    /// The reason this is being redeclafred is because of ambiguity errors
+    ///
+    /// - Parameters:
+    ///     - a: Value to compare
+    ///     - b: Another value to compate
+    ///
+    /// - Returns: The maximum of ```a``` and ```b```. If equal, it returns ```b```.
+    private static func maxOf<T: Comparable>(_ a: T, _ b: T) -> T {
+        return a > b ? a : b
     }
     
 }

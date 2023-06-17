@@ -127,7 +127,7 @@ class UBigNumberTests: XCTestCase {
             
             a = 1
             
-            a.leftShift(by: i)
+            a <<= i
             
             XCTAssertEqual(a.leastSignificantWord, 1 << i)
     
@@ -150,7 +150,7 @@ class UBigNumberTests: XCTestCase {
             
             XCTAssertTrue(a.isNormal)
             
-            XCTAssertTrue((a.binaryCompliment + a + 1).isPowerOfTwo)
+            XCTAssertTrue((~a + a + 1).isPowerOfTwo)
             
         }
         
@@ -162,7 +162,7 @@ class UBigNumberTests: XCTestCase {
         
         for i in 0..<64 {
             var shifted: UBN = 1
-            shifted.leftShift(by: i)
+            shifted <<= i
             
             let correct = UBN.WordType(1) << i
             
@@ -176,7 +176,7 @@ class UBigNumberTests: XCTestCase {
             a = 1
             let shift = i
             
-            a.leftShift(by: i)
+            a <<= i
             
             XCTAssertEqual(a.leastSignificantWord, 1 << i)
     
@@ -313,7 +313,7 @@ class UBigNumberTests: XCTestCase {
         
         // test with unequal lengths
 
-        y.rightShift(by: 64)
+        y >>= 64
 
         correctAnd = "6060606060606060a0a0a0a0a0a0a0a06060606060606060"
         result = x & y
@@ -485,10 +485,10 @@ class UBigNumberTests: XCTestCase {
             
             var accumulator: UBN = 0
             
-            let scalar = Int.random(in: 0...100)
+            let scalar = UBN(Int.random(in: 0...100))!
             
             for _ in 0..<scalar {
-                accumulator.add(a)
+                accumulator += a
             }
             
             XCTAssertEqual(accumulator, scalar * a, "Repeated addition and multiplication are the same")

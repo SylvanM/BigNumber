@@ -59,10 +59,6 @@ public struct BigNumber: BNProtocol {
         BN(sign: self.sign * -1, magnitude: self.magnitude)
     }
     
-    public var binaryCompliment: BN {
-        BN(sign: sign, magnitude: magnitude.binaryCompliment)
-    }
-    
     public var isZero: Bool {
         sign == 0
     }
@@ -111,6 +107,10 @@ public struct BigNumber: BNProtocol {
     
     var isEven: Bool {
         magnitude.isEven
+    }
+    
+    var absoluteValue: BigNumber {
+        BigNumber(magnitude)
     }
     
     // MARK: Initializers

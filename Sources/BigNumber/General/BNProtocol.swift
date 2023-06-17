@@ -27,11 +27,7 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     var sizeInBytes: Int { get }
     
-    var binaryCompliment: Self { get }
-    
     var hexString: String { get }
-    
-    var leastSignificantBitIsSet: Bool { get }
     
     var mostSignificantWord: WordType { get set }
     
@@ -59,49 +55,13 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     func invMod(_ m: Self) -> Self
     
-    func gcd(_ b: Self) -> Self
+    static func gcd(_ a: Self, _ b: Self) -> Self
     
     // MARK: Primality Tests
     
     func isProbablePrime() -> Bool
     
     static func generateProbablePrime(bytes: Int) -> Self
-    
-    // MARK: - Comparisons and Operations
-    
-    func equals(_ other: Self) -> Bool
-    
-    func compare(to other: Self) -> Int
-    
-    // MARK: Bitwise Operations
-    
-    @discardableResult mutating func or (with other: Self) -> Self
-    
-    @discardableResult mutating func and (with other: Self) -> Self
-    
-    @discardableResult mutating func xor (with other: Self) -> Self
-    
-    @discardableResult mutating func leftShift (by other: Self) -> Self
-    
-    @discardableResult mutating func rightShift (by other: Self) -> Self
-    
-    // MARK: Arithmetic Operations
-    
-    @discardableResult mutating func add (_ other: Self, withOverflowHandling: Bool) -> Self
-    
-    @discardableResult mutating func modadd (_ other: Self, m: Self) -> Self
-
-    @discardableResult mutating func modsub (_ other: Self, m: Self) -> Self
-    
-    @discardableResult mutating func subtract (_ other: Self) -> Self
-    
-    static func multiply (x: Self, y: Self, result: inout Self)
-    
-    static func modmul (x: Self, y: Self, m: Self, result: inout Self)
-    
-    static func divide (dividend: Self, divisor: Self, quotient: inout Self, remainder: inout Self)
-    
-    func moddiv (by other: Self, m: Self) -> Self
     
     // MARK: Subscripts
     
@@ -112,6 +72,8 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     subscript (bit index: Int) -> WordType { get set }
     
     // MARK: Operators
+    
+    func quotientAndRemainder(dividingBy divisor: Self) -> (quotient: Self, remainder: Self)
     
     static func == (lhs: Self, rhs: Self) -> Bool
     
@@ -175,17 +137,9 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
 
 internal protocol UBNProtocol: RawBNProtocol, UnsignedInteger {
     
-    // MARK: Properties
-    
-    var twosCompliment: Self { get }
-    
     // MARK: Initializers
     
     init(data: Data)
-    
-    // MARK: Methods
-    
-    static func modexp(a: Self, b: Self, m: Self, invPower: Bool) -> Self
     
 }
 
@@ -195,15 +149,13 @@ internal protocol BNProtocol: RawBNProtocol, SignedInteger {
     
     var negative: Self { get }
     
+    var absoluteValue: Self { get }
+    
     var sign: Int { get }
     
     // MARK: Methods
     
-    static func extgcd(a: Self, b: Self) -> (x: Self, y: Self, g: Self)
-    
-    mutating func set(sign: Int) -> Self
-    
-    static func modexp(a: Self, b: Self, m: Self) -> Self
+    static func extendedEuclidean(a: Self, b: Self) -> (g: Self, x: Self, y: Self)
     
     static prefix func - (x: Self) -> Self
     

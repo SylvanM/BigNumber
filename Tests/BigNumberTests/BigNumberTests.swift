@@ -12,11 +12,20 @@ final class BigNumberTests: XCTestCase {
     }
 
     func testExample() {
-        let x = UBN(UBigNumber.WordType.max)
         let y: UBN = "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000"
         
-        XCTAssertEqual(y.words, [1, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 0x5555555555555554, 0x0000000000000000, 0x0000000000000000].reversed())
-        
+        XCTAssertEqual(
+            y.words,
+            [
+                1,
+                0x5555555555555555,
+                0x5555555555555555,
+                0x5555555555555555,
+                0x5555555555555554,
+                0x0000000000000000,
+                0x0000000000000000
+            ].reversed()
+        )
     }
 
     // MARK: Comparison Tests
@@ -36,15 +45,6 @@ final class BigNumberTests: XCTestCase {
             XCTAssertTrue(b >= a)
             
             a.set(sign: 1)
-            
-            let unsignedcmp = a.magnitude.compare(to: b.magnitude)
-            
-            XCTAssertEqual(unsignedcmp, a.compare(to: b))
-            
-            a.set(sign: -1)
-            b.set(sign: -1)
-            
-            XCTAssertEqual(unsignedcmp * -1, a.compare(to: b))
         }
         
     }
@@ -56,32 +56,23 @@ final class BigNumberTests: XCTestCase {
 
         var a = UBN()
         var b = UBN()
-        var cmp: Int
 
         // test compare(to:) method
 
         a = [0, 0, 0, 0, 0, 0, 0, 0]
         b = [0]
-        cmp = a.compare(to: b)
-        XCTAssertEqual(cmp, 0)
         XCTAssertTrue(a == b)
 
         a = [0]
         b = [0, 0, 0, 0, 0, 0, 0, 0]
-        cmp = a.compare(to: b)
-        XCTAssertEqual(cmp, 0)
         XCTAssertTrue(a == b)
 
         a = [233423423]
         b = [131321312, 0]
-        cmp = a.compare(to: b)
-        XCTAssertEqual(cmp, 1)
         XCTAssertTrue(a > b)
 
         b = [1231312312321321]
         a = 0xffffffffffffffff
-        cmp = b.compare(to: a)
-        XCTAssertEqual(cmp, -1)
         XCTAssertTrue(b < a)
 
 
@@ -192,7 +183,7 @@ final class BigNumberTests: XCTestCase {
 
         let randomWords = [UInt.random(in: 0...UInt.max), UInt.random(in: 0...UInt.max), UInt.random(in: 0...UInt.max)]
         ubn = UBN(randomWords)
-        XCTAssertEqual(ubn.binaryCompliment.words, [~randomWords[0], ~randomWords[1], ~randomWords[2]])
+        XCTAssertEqual((~ubn).words, [~randomWords[0], ~randomWords[1], ~randomWords[2]])
 
         // instead of directly testing the two's compliment, I'll test it by testing the other operations
 
@@ -296,7 +287,7 @@ final class BigNumberTests: XCTestCase {
                 var a = BN.random(words: 1)
                 let b = a
                 
-                a.add(a)
+                a += a
                 
                 XCTAssertEqual(a.sign, b.sign)
                 XCTAssertEqual(a, b + b)
@@ -319,34 +310,21 @@ final class BigNumberTests: XCTestCase {
     
     // MARK: Test Methods
     
-    func testSignedModuloOperator() {
-       
-        for _ in 0...255 {
-            
-            let a = BN.random(words: 3) * 2
-            
-            XCTAssertEqual(a % 2, 0)
-            
-        }
-        
-    }
-    
-    
     
     func testExtGcd() {
         
         let a: BN = 1398
         let b: BN = 324
         
-        let (g, x, y) = BN.extgcd(a: a, b: b)
+        let (g, x, y) = BN.extendedEuclidean(a: a, b: b)
         
-        XCTAssertEqual(a.gcd(b), 6)
+        XCTAssertEqual(BN.gcd(a, b), 6)
         XCTAssertEqual(g, 6)
         XCTAssertEqual(x, -19)
         XCTAssertEqual(y, 82)
         
-        XCTAssertEqual(a.gcd(b), b.gcd(a))
-        XCTAssertEqual(a.gcd(b), g)
+        XCTAssertEqual(BN.gcd(a, b), BN.gcd(b, a))
+        XCTAssertEqual(BN.gcd(a, b), g)
         
         XCTAssertEqual(a * x + b * y, g)
         XCTAssertEqual(a * -19 + b * 82, 6)

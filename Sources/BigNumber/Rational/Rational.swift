@@ -144,7 +144,7 @@ public struct Rational: SignedNumeric, ExpressibleByFloatLiteral, ExpressibleByS
             numerator = 0
             denominator = 1
         } else {
-            let g = numerator.gcd(denominator)
+            let g = BN.gcd(numerator, denominator)
             numerator /= g
             denominator /= g
         }
