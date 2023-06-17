@@ -10,7 +10,7 @@ import BigNumber
 
 final class DivisionTesting: XCTestCase {
     
-    let maxBytes = 500
+    let maxBytes = 200
     let trials = 100
 
     override func setUpWithError() throws {
@@ -36,12 +36,10 @@ final class DivisionTesting: XCTestCase {
         let dividend: UBN = "0x1DA627265E343E9E14DA"
         let expectedQuotient: UBN = "0xA5406B0CEA"
         
-        var quotient: UBN = 0
-        var remainder: UBN = 0
-        
-        UBN.divide(dividend: dividend, divisor: divisor, quotient: &quotient, remainder: &remainder)
+        let (quotient, remainder) = dividend.quotientAndRemainder(dividingBy: divisor)
         
         XCTAssertEqual(expectedQuotient, quotient)
+        XCTAssertEqual(remainder, 0)
     }
     
     func testKnownExamples() throws {
@@ -71,10 +69,7 @@ final class DivisionTesting: XCTestCase {
             let knownQuotient = UBN.random(bytes: maxBytes)
             let product = divisor * knownQuotient
             
-            var quotient: UBN = 0
-            var remainder: UBN = 0
-            
-            UBN.divide(dividend: product, divisor: divisor, quotient: &quotient, remainder: &remainder)
+            let (quotient, remainder) = product.quotientAndRemainder(dividingBy: divisor)
             
             XCTAssertEqual(knownQuotient, quotient)
             XCTAssertEqual(remainder, 0)
@@ -84,16 +79,22 @@ final class DivisionTesting: XCTestCase {
     func testProperties() throws {
         
         for _ in 1...trials {
-            let dividend = UBN.random(bytes: maxBytes)
+            let dividend = UBN.random(bytes: maxBytes * 2)
             let divisor = UBN.random(bytes: maxBytes)
             
-            var quotient: UBN = 0
-            var remainder: UBN = 0
-            
-            UBN.divide(dividend: dividend, divisor: divisor, quotient: &quotient, remainder: &remainder)
+            let (quotient, remainder) = dividend.quotientAndRemainder(dividingBy: divisor)
             
             XCTAssertEqual(divisor * quotient + remainder, dividend)
         }
+        
+    }
+    
+    func testEuclideanAlgs() throws {
+        
+        let a: BN = 1398
+        let b: BN = 324
+        
+        XCTAssertEqual(BN.gcd(a, b), 6)
         
     }
 

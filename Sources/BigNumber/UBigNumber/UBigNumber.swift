@@ -69,11 +69,6 @@ public struct UBigNumber: UBNProtocol {
         return otherWordsBitWidth + WordType.bitWidth - mostSignificantWord.leadingZeroBitCount
     }
     
-    /// The binary compliment of this `UBN`
-    public var binaryCompliment: UBigNumber {
-        UBigNumber( words.map { ~$0 } )
-    }
-    
     /// The amount of trailing zero bits
     public var trailingZeroBitCount: Int {
         var zeros = 0
@@ -162,14 +157,6 @@ public struct UBigNumber: UBNProtocol {
     /// Whether or not this number is even
     public var isEven: Bool {
         words[0] % 2 == 0
-    }
-    
-    // MARK: Private Properties
-    
-    /// The two's compliment of this `UBN`
-    public var twosCompliment: UBigNumber {
-        var comp = binaryCompliment
-        return comp.add(1, withOverflowHandling: false)
     }
     
     // MARK: - Initializers
