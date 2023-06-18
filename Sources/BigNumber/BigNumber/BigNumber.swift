@@ -40,11 +40,10 @@ public struct BigNumber: BNProtocol {
     
     public var words: Magnitude.Words {
         get { magnitude.words }
-        set { magnitude.words = newValue }
     }
     
     public var bitWidth: Int {
-        magnitude.bitWidth
+        magnitude.bitWidth + sign.bitWidth
     }
     
     public var trailingZeroBitCount: Int {
@@ -85,12 +84,10 @@ public struct BigNumber: BNProtocol {
     
     var mostSignificantWord: Magnitude.WordType {
         get { magnitude.mostSignificantWord }
-        set { magnitude.mostSignificantWord = newValue }
     }
     
     var leastSignificantWord: Magnitude.WordType {
         get { magnitude.leastSignificantWord }
-        set { magnitude.leastSignificantWord = newValue }
     }
     
     var mostSignificantSetBitIndex: Int {

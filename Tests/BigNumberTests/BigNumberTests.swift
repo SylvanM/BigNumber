@@ -2,17 +2,58 @@ import XCTest
 @testable import BigNumber
 
 final class BigNumberTests: XCTestCase {
-
-    override func setUp() {
-        // Put setup code here
+    
+    // MARK: Initializer Tests
+    
+    func testDefaultInitializer() {
+        let a = BN()
+        XCTAssertEqual(a, 0)
+        XCTAssertEqual(a.words, [0])
+        XCTAssertEqual(a.sign, 0)
+        XCTAssertEqual(a.bitWidth, Int(0).bitWidth + BN.WordType(0).bitWidth)
+        XCTAssertEqual(a.negative, a)
+        XCTAssert(a.isZero)
+        XCTAssert(a.isEven)
+        XCTAssertFalse(a.isPowerOfTwo)
+        XCTAssertEqual(a.sizeInBytes, MemoryLayout.size(ofValue: a))
+        XCTAssertEqual(a.hexString, "0")
+        XCTAssertFalse(a.leastSignificantBitIsSet)
+        XCTAssertEqual(a.mostSignificantWord, 0)
+        XCTAssertEqual(a.leastSignificantWord, 0)
+        XCTAssertEqual(a.mostSignificantSetBitIndex, -1)
+        XCTAssert(a.isNormal)
+        XCTAssertEqual(a.nonzeroBitCount, 0)
+        XCTAssertEqual(a.absoluteValue, a)
+        XCTAssertEqual(a.absoluteValue, 0)
+        XCTAssertEqual(a.trailingZeroBitCount, UInt(0).trailingZeroBitCount)
+        XCTAssertEqual(a.size, 1)
+        XCTAssertEqual(a.description, "0x0")
+    }
+    
+    func testOtherInitializer() {
+        for _ in 1...100 {
+            let other = BN.random(words: Int.random(in: 1...100))
+            XCTAssertEqual(other, BN(other))
+        }
+    }
+    
+    func testModOtherInitializer() {
+        for _ in 1...100 {
+            let other = BN.random(words: Int.random(in: 1...10))
+            let modulus = Int.random(in: 1...Int.max)
+            let modded = BN(other, mod: modulus)
+            
+            if other >= 0 {
+                XCTAssertEqual(other % BN(modulus), modded)
+            } else {
+                let positive = other.absoluteValue
+                XCTAssertEqual(((positive % BN(modulus)) + (other % BN(modulus))) % BN(modulus), 0)
+            }
+        }
     }
 
-    override func tearDown() {
-        // This code runs after all other tests
-    }
-
-    func testExample() {
-        let y: UBN = "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000"
+    func testStringInit() {
+        let y: BN = "1555555555555555555555555555555555555555555555555555555555555555400000000000000000000000000000000"
         
         XCTAssertEqual(
             y.words,
@@ -26,6 +67,8 @@ final class BigNumberTests: XCTestCase {
                 0x0000000000000000
             ].reversed()
         )
+        
+        
     }
 
     // MARK: Comparison Tests

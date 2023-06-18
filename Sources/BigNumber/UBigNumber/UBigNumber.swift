@@ -63,10 +63,9 @@ public struct UBigNumber: UBNProtocol {
     
     /// Size of the integer represented by the ```BN``` in bits
     public var bitWidth: Int {
-        if isZero { return 0 }
-        
-        let otherWordsBitWidth = (size - 1) * 64
-        return otherWordsBitWidth + WordType.bitWidth - mostSignificantWord.leadingZeroBitCount
+        words.reduce(into: 0) { partialResult, word in
+            partialResult += word.bitWidth
+        }
     }
     
     /// The amount of trailing zero bits
@@ -126,7 +125,6 @@ public struct UBigNumber: UBNProtocol {
     /// Accesses the most significant word of this `UBN`
     public var mostSignificantWord: UInt {
         get { words[size - 1] }
-        set { words[size - 1] = newValue }
     }
     
     /// Acesses the least significant word of this `UBN`
@@ -139,7 +137,11 @@ public struct UBigNumber: UBNProtocol {
     ///
     /// Note: If the number is 0, this will return -1, because there is no significant bit
     public var mostSignificantSetBitIndex: Int {
-        bitWidth - 1
+        if isZero { return -1 }
+        else {
+            let otherWordsBitWidth = (size - 1) * 64
+            return otherWordsBitWidth + WordType.bitWidth - mostSignificantWord.leadingZeroBitCount - 1
+        }
     }
     
     /// Whether or not the `UBN` is normal
