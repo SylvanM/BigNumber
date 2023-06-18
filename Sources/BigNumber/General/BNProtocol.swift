@@ -29,9 +29,9 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     
     var hexString: String { get }
     
-    var mostSignificantWord: WordType { get set }
+    var mostSignificantWord: WordType { get }
     
-    var leastSignificantWord: WordType { get set }
+    var leastSignificantWord: WordType { get }
     
     var mostSignificantSetBitIndex: Int { get }
     
@@ -50,6 +50,14 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
     static func random(words: Int, generator: SecRandomRef?) -> Self
     
     mutating func setToZero() -> Self
+    
+    // MARK: Initializers
+    
+    init(_: BigNumber, mod: Int)
+    
+    init(_: UBigNumber, mod: Int)
+    
+    init(_: Self)
     
     // MARK: Modular Methods
     
@@ -154,6 +162,8 @@ internal protocol BNProtocol: RawBNProtocol, SignedInteger {
     var sign: Int { get }
     
     // MARK: Methods
+    
+    func mod(_ m: Self) -> Self
     
     static func extendedEuclidean(a: Self, b: Self) -> (g: Self, x: Self, y: Self)
     

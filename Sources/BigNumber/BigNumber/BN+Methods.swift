@@ -26,6 +26,17 @@ public extension BigNumber {
     }
     
     /**
+     * Computes `self` modulo `m`. Note that this is different thatn `self % m`, which computes the remainder after division by `m`.
+     */
+    func mod(_ m: BigNumber) -> BigNumber {
+        var modded = self % m
+        if modded < 0 {
+            modded += m
+        }
+        return modded
+    }
+    
+    /**
      * Computes `x` such that `x * self = 1 (mod m)` or returns garbage if `x` is not relatively prime to `m`
      *
      * - Parameters:

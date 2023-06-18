@@ -40,11 +40,10 @@ public struct BigNumber: BNProtocol {
     
     public var words: Magnitude.Words {
         get { magnitude.words }
-        set { magnitude.words = newValue }
     }
     
     public var bitWidth: Int {
-        magnitude.bitWidth
+        magnitude.bitWidth + sign.bitWidth
     }
     
     public var trailingZeroBitCount: Int {
@@ -85,12 +84,10 @@ public struct BigNumber: BNProtocol {
     
     var mostSignificantWord: Magnitude.WordType {
         get { magnitude.mostSignificantWord }
-        set { magnitude.mostSignificantWord = newValue }
     }
     
     var leastSignificantWord: Magnitude.WordType {
         get { magnitude.leastSignificantWord }
-        set { magnitude.leastSignificantWord = newValue }
     }
     
     var mostSignificantSetBitIndex: Int {
@@ -114,6 +111,21 @@ public struct BigNumber: BNProtocol {
     }
     
     // MARK: Initializers
+    
+    /**
+     * Initializes a `BigNumber` as another `BigNumber`, modulo some modulus.
+     */
+    public init(_ other: BigNumber, mod m: Int) {
+        self.magnitude = UBN(other, mod: m)
+        self.sign = 1
+    }
+    
+    /**
+     * Initializes a `BigNumber` as a `UBigNumber`, modulo some modulus.
+     */
+    public init(_ other: UBigNumber, mod m: Int) {
+        self.init(UBN(other, mod: m))
+    }
     
     public init(_ other: BN) {
         self.sign = other.sign
