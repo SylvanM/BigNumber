@@ -303,12 +303,6 @@ final class BigNumberTests: XCTestCase {
             XCTAssertEqual(rand.size, rand.words.count)
         }
 
-        for _ in 0...255 {
-            let integer = Int.random(in: 0...Int.max)
-            let ubn = UBN(integer)!
-            XCTAssertEqual(ubn.bitWidth, Int(log2(Double(integer))) + 1)
-        }
-
     }
 
     

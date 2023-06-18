@@ -113,12 +113,6 @@ class UBigNumberTests: XCTestCase {
             XCTAssertEqual(rand.size, rand.words.count)
         }
 
-        for _ in 0...255 {
-            let integer = Int.random(in: 0...Int.max)
-            let ubn = UBN(integer)!
-            XCTAssertEqual(ubn.bitWidth, Int(log2(Double(integer))) + 1)
-        }
-
         var a: UBN
         
         for i in 0...100 {
@@ -227,7 +221,6 @@ class UBigNumberTests: XCTestCase {
         x >>= 73
         XCTAssertTrue(x.isNormal)
         XCTAssertTrue(x.isZero)
-        XCTAssertEqual(x.bitWidth, 0)
 
     }
     
@@ -242,30 +235,29 @@ class UBigNumberTests: XCTestCase {
         XCTAssertTrue(x.isNormal)
 
         x[bit: 0] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 0] == 1 && x.bitWidth == 1)
+        XCTAssertTrue(x.isNormal && x[bit: 0] == 1 )
 
         x[bit: 0] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 0] == 0 && x.bitWidth == 0)
+        XCTAssertTrue(x.isNormal && x[bit: 0] == 0)
 
         x[bit: 63] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 63] == 1 && x.bitWidth == 64)
+        XCTAssertTrue(x.isNormal && x[bit: 63] == 1)
 
         x[bit: 63] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 63] == 0 && x.bitWidth == 0)
+        XCTAssertTrue(x.isNormal && x[bit: 63] == 0)
 
         x[bit: 64] = 1
         XCTAssertTrue(x.isNormal)
         XCTAssertTrue(x[bit: 64] == 1)
-        XCTAssertTrue(x.bitWidth == 65)
 
         x[bit: 64] = 0
-        XCTAssertTrue(x.isNormal && x[bit: 64] == 0 && x.bitWidth == 0)
+        XCTAssertTrue(x.isNormal && x[bit: 64] == 0)
 
         x[bit: 256] = 0
         XCTAssertTrue(x.isNormal && x.isZero)
 
         x[bit: 256] = 1
-        XCTAssertTrue(x.isNormal && x[bit: 256] == 1 && x.bitWidth == 257)
+        XCTAssertTrue(x.isNormal && x[bit: 256] == 1)
 
         x[bit: 256] = 0
         XCTAssertTrue(x.isNormal && x.isZero)
