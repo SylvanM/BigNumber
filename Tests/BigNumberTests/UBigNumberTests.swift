@@ -90,6 +90,70 @@ class UBigNumberTests: XCTestCase {
         
     }
     
+    func testRandomInitializers() {
+        for _ in 1...100 {
+            let lower = UBN.random(words: 4)
+            let upper = UBN.random(words: 16)
+            
+            let range = Range(uncheckedBounds: (lower, upper))
+            
+            let random = UBN.random(in: range)
+            XCTAssert(range.contains(random))
+        }
+    }
+    
+    // MARK: Randomness Tests
+    
+    func testParityDistributionForBits() {
+        let bits = 255
+        
+        var evenCounter = 0
+        
+        let trials = 100000
+        
+        for _ in 1...trials {
+            let randomValue = UBN.random(bits: bits)
+            if randomValue.isEven {
+                evenCounter += 1
+            }
+        }
+        
+        let evenPercentage = Double(evenCounter) / Double(trials)
+    }
+    
+    func testParityDistributionInRange() {
+        var evenCounter = 0
+        
+        let trials = 10000
+        
+        for _ in 1...trials {
+            let prime: UBN = "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED"
+            let fieldElement = UBN.random(in: 0..<prime)
+            if fieldElement.isEven {
+                evenCounter += 1
+            }
+        }
+        
+        let evenPercentage = Double(evenCounter) / Double(trials)
+        print(evenPercentage)
+    }
+    
+    func testParityDistribution() {
+        var evenCounter = 0
+        
+        let trials = 1000000
+        
+        for _ in 1...trials {
+            let fieldElement = UBN.random(words: Int.random(in: 1...100))
+            if fieldElement.isEven {
+                evenCounter += 1
+            }
+        }
+        
+        let evenPercentage = Double(evenCounter) / Double(trials)
+        print(evenPercentage)
+    }
+    
     // MARK: Properties
     
     func testProperties() {
@@ -453,20 +517,6 @@ class UBigNumberTests: XCTestCase {
         
     }
     
-    func testCraziness() {
-        // calculate a factorial of a ludicrously big number!
-        
-        var a: UBN = 170
-        
-        var fact: UBN = 1
-        
-        while a > 1 {
-            fact *= a
-            a -= 1
-        }
-        
-    }
-    
     func testUnsignedAdditionMultiplicationSymmetry() {
         
         for i in 1...256 {
@@ -486,6 +536,35 @@ class UBigNumberTests: XCTestCase {
             XCTAssertEqual(accumulator, scalar * a, "Repeated addition and multiplication are the same")
         }
         
+    }
+    
+    func testInverseModSmallPrimes() {
+        for i in 1...1000 {
+            let prime = UBN.generateProbablePrime(bytes: 2)
+            print(i)
+            let fieldElement = UBN.random(in: 0..<prime)
+            let invMod = fieldElement.invMod(prime)
+            XCTAssertEqual((fieldElement * invMod) % prime, 1)
+        }
+    }
+    
+    func testInverseModBigPrime() {
+        for _ in 1...1000 {
+            let prime: UBN = "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED"
+            let fieldElement = UBN.random(in: 1..<prime)
+            let invMod = fieldElement.invMod(prime)
+            
+            XCTAssertEqual((fieldElement * invMod) % prime, 1)
+        
+        }
+    }
+    
+    func testExtendedEuclideanAlgorithm() {
+        let a: BN = 4
+        let b: BN = 5
+        let (g, x, y) = BN.extendedEuclidean(a: a, b: b)
+        
+        print("\(a) * \(x) + \(b) * \(y) = \(g)")
     }
     
     func testEvilDivision() {

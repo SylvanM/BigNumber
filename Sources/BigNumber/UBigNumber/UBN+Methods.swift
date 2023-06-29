@@ -62,9 +62,9 @@ public extension UBigNumber {
      * Checks if a number is a probable prime using Fermat's Little Theorem, stating that if `n` is a prime, then
      * `a(n-1) = 1 (mod n)` for all `1 < a < p`
      *
-     * If `n` is not prine, then (except for Charmichael numbers) approximately 1/2 of the integers `a` will
+     * If `n` is not prime, then (except for Charmichael numbers) approximately 1/2 of the integers `a` will
      * return a value not equal to 1 when raised to the `(n - 1)` modulo `n`, so this function tries
-     * 128 random numers. If all of them work, then `n` is a prime with a probability of `1 - 2^(-128)`. If any fail, this is most
+     * 128 random numbers. If all of them work, then `n` is a prime with a probability of `1 - 2^(-128)`. If any fail, this is most
      * certainly not a prime.
      *
      * - Parameters:

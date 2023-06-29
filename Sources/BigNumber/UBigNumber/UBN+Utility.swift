@@ -39,6 +39,26 @@ public extension UBigNumber {
     }
     
     /**
+     * Generates a random `UBN` with a certain amount of random bits
+     */
+    static func random(bits: Int, generator: SecRandomRef? = kSecRandomDefault) -> UBigNumber {
+        var randomValue: UBN = .zero
+        
+        let (wordsToGenerate, bitsAndBytes) = bits.quotientAndRemainder(dividingBy: 64)
+        let (bytesToGenerate, bitsToGenerate) = bitsAndBytes.quotientAndRemainder(dividingBy: 8)
+        
+        randomValue = random(words: wordsToGenerate)
+        
+        randomValue <<= 8 * bytesToGenerate
+        randomValue |= random(bytes: bytesToGenerate)
+        
+        randomValue <<= bitsToGenerate
+        randomValue |= random(bytes: 1) & ((1 << bitsToGenerate) - 1)
+        
+        return randomValue
+    }
+    
+    /**
      * Generates a random `UBN`
      *
      * - Parameters:
@@ -66,6 +86,37 @@ public extension UBigNumber {
         a.words = words
         _ = SecRandomCopyBytes(generator, a.sizeInBytes, &a.words)
         return a.normalize()
+    }
+    
+    /**
+     * Generates a uniformly random `UBN` in a range
+     *
+     * - Parameter range: The range in which the `UBigNumber` should be generated
+     *
+     * - Returns: A `UBN` in `range`
+     */
+    static func random(`in` range: Range<UBigNumber>) -> UBigNumber {
+        // generate the amount of randomness needed, then shift that randomness to be in the range
+        
+        if range.lowerBound == 0 {
+            // how many bits are needed to represent this guy?
+            let bitsNeeded = range.upperBound.mostSignificantSetBitIndex + 1
+            var randomValue: UBN = 0
+            
+            repeat {
+                randomValue = random(bits: bitsNeeded)
+            } while !range.contains(randomValue)
+            
+            return randomValue
+            
+        } else {
+            return range.lowerBound + random(
+                in: Range(uncheckedBounds: (
+                    lower: .zero,
+                    upper: range.upperBound - range.lowerBound
+                ))
+            )
+        }
     }
     
     @discardableResult

@@ -45,7 +45,8 @@ public extension BigNumber {
      * - Returns: `x` such that `x * self = 1 (mod m)` or garbage if `x` is not relatively prime to `m`
      */
     func invMod(_ m: BigNumber) -> BigNumber {
-        BigNumber.extendedEuclidean(a: self, b: m).x
+        assert(!self.isZero, "Cannot invert zero")
+        return BigNumber.extendedEuclidean(a: self, b: m).x.mod(m)
     }
     
     // MARK: Modular Exponentiation (Non-operator definitions)
@@ -65,7 +66,7 @@ public extension BigNumber {
         let bitSize = b.bitWidth
         var t: BN = a
         var x: BN = 1
-        
+         
         if m.sign == -1 {
             t = a.invMod(-m)
         }
