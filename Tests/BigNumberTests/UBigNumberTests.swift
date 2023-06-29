@@ -42,6 +42,12 @@ class UBigNumberTests: XCTestCase {
     
     // MARK: Initializers
     
+    func testStatics() {
+        let a = UBN.zero
+        
+        print(a)
+    }
+    
     func testIntegerInitialiers() {
         
         // Test using integer literal

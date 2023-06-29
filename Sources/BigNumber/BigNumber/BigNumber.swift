@@ -29,6 +29,13 @@ public struct BigNumber: BNProtocol {
     
     public typealias Magnitude = UBigNumber
     
+    // MARK: Static Properties
+    
+    /**
+     * A `BigNumber` representing zero
+     */
+    public static let zero: BN = BN()
+    
     // MARK: Properties
     
     public internal(set) var magnitude: UBigNumber
@@ -111,6 +118,14 @@ public struct BigNumber: BNProtocol {
     }
     
     // MARK: Initializers
+    
+    /**
+     * Default initializer, creating a `BigNumber` representing the value 0
+     */
+    public init() {
+        self.magnitude = 0
+        self.sign = 0
+    }
     
     /**
      * Initializes a `BigNumber` as another `BigNumber`, modulo some modulus.

@@ -32,6 +32,13 @@ public struct UBigNumber: UBNProtocol {
     
     public typealias FloatLiteralType = Float
     
+    // MARK: - Static Properties
+    
+    /**
+     * A `UBigNumber` representing zero
+     */
+    public static let zero: UBN = UBN()
+    
     // MARK: - Public Properties
     
     /// Whether or not this number is a power of two
