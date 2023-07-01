@@ -49,6 +49,12 @@ internal protocol RawBNProtocol: BinaryInteger, ExpressibleByStringLiteral, Expr
 
     static func random(words: Int, generator: SecRandomRef?) -> Self
     
+    static func random(bits: Int, generator: SecRandomRef?) -> Self
+    
+    static func random(in: Range<Self>) -> Self
+    
+    static func random(in: ClosedRange<Self>) -> Self
+    
     mutating func setToZero() -> Self
     
     // MARK: Initializers

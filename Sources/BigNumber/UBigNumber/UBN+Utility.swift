@@ -119,6 +119,17 @@ public extension UBigNumber {
         }
     }
     
+    /**
+     * Generates a uniformly random `UBN` in a closed range
+     *
+     * - Parameter range: The closed range in which the `UBigNumber` should be generated
+     *
+     * - Returns: A `UBN` in `range`
+     */
+    static func random(in range: ClosedRange<UBigNumber>) -> UBigNumber {
+        random(in: range.lowerBound..<(range.upperBound + 1))
+    }
+    
     @discardableResult
     mutating func setToZero() -> UBigNumber {
         self.words = [0]

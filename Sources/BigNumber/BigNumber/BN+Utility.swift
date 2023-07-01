@@ -14,7 +14,7 @@ public extension BigNumber {
     /**
      * Gets rid of extraneous leading zeroes
      *
-     * - Returns: The normalized version of this `UBigNumber`
+     * - Returns: The normalized version of this `BigNumber`
      */
     @discardableResult mutating func normalize() -> BigNumber {
         
@@ -37,12 +37,12 @@ public extension BigNumber {
     }
     
     /**
-     * Generates a random `UBN`
+     * Generates a random `BN`
      *
      * - Parameters:
-     *      - size: The maximum number of words in the random `UBN` to be generated
+     *      - size: The maximum number of words in the random `BN` to be generated
      *
-     * - Returns: A `UBN` with a random value
+     * - Returns: A `BN` with a random value
      */
     static func random(words: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
         
@@ -70,12 +70,12 @@ public extension BigNumber {
     }
     
     /**
-     * Generates a random `UBN`
+     * Generates a random `BN`
      *
      * - Parameters:
-     *      - bytes: The maximum number of bytes in the random `UBN` to be generated
+     *      - bytes: The maximum number of bytes in the random `BN` to be generated
      *
-     * - Returns: A `UBN` with a random value
+     * - Returns: A `BN` with a random value
      */
     static func random(bytes: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
         
@@ -100,6 +100,48 @@ public extension BigNumber {
         
         return random
         
+    }
+    
+    /**
+     * Generates a random `BN`
+     *
+     * - Parameters:
+     *      - bytes: The maximum number of bits in the random `BN` to be generated
+     *
+     * - Returns: A `BN` with a random value
+     */
+    static func random(bits: Int, generator: SecRandomRef? = kSecRandomDefault) -> BigNumber {
+        
+        let randomMag = UBN.random(bits: bits, generator: generator)
+        var randomSign = [0]
+        
+        if randomMag.isZero {
+            return BN(sign: randomSign[0], magnitude: randomMag)
+        }
+        
+        // randomize the sign
+        _ = SecRandomCopyBytes(generator, 1, &randomSign)
+        
+        randomSign[0] %= 2
+        randomSign[0] *= 2
+        randomSign[0] -= 1
+        
+        var random = BN()
+        
+        random.sign = randomSign[0]
+        random.magnitude = randomMag
+        
+        return random
+        
+    }
+    
+    static func random(in range: Range<BigNumber>) -> BigNumber {
+        let ubn = UBN.random(in: 0..<(range.upperBound - range.lowerBound))
+        return BN(ubn) + range.lowerBound
+    }
+    
+    static func random(in range: ClosedRange<BigNumber>) -> BigNumber {
+        random(in: range.lowerBound..<(range.upperBound + 1))
     }
     
     @discardableResult
